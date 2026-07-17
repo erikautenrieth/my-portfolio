@@ -12,6 +12,8 @@ export function TargetConnector() {
   const arrowRef = useRef<SVGPolygonElement>(null);
   const pulseRef = useRef<SVGCircleElement>(null);
   const svgRef = useRef<SVGSVGElement>(null);
+  const lastIndexRef = useRef<string | null>(null);
+  const drawStartRef = useRef(0);
 
   useEffect(() => {
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -28,9 +30,15 @@ export function TargetConnector() {
       const lock = document.querySelector<HTMLElement>(".target-lock-active");
       if (!lock) {
         svg.style.opacity = "0";
+        lastIndexRef.current = null;
         return;
       }
       const index = lock.dataset.targetIndex;
+      // new target → restart the draw-in animation
+      if (index !== lastIndexRef.current) {
+        lastIndexRef.current = index ?? null;
+        drawStartRef.current = performance.now();
+      }
       const anchor = document.querySelector<HTMLElement>(
         `[data-heading-anchor="${index}"]`,
       );
@@ -107,6 +115,16 @@ export function TargetConnector() {
       dot.setAttribute("cx", String(x1));
       dot.setAttribute("cy", String(y1));
 
+      // draw-in: the line traces from the dot to the target, then the
+      // arrowhead snaps in and the pulse starts travelling
+      const drawT = reduced
+        ? 1
+        : Math.min(1, (performance.now() - drawStartRef.current) / 550);
+      const eased = 1 - Math.pow(1 - drawT, 3);
+      const totalLength = path.getTotalLength();
+      path.setAttribute("stroke-dasharray", String(totalLength));
+      path.setAttribute("stroke-dashoffset", String(totalLength * (1 - eased)));
+
       // arrowhead aligned with the final segment, pointing into the lock
       const degrees = (angle * 180) / Math.PI;
       arrow.setAttribute("points", "-8,-4.5 -8,4.5 0,0");
@@ -114,9 +132,10 @@ export function TargetConnector() {
         "transform",
         `translate(${ex}, ${ey}) rotate(${degrees})`,
       );
+      arrow.style.opacity = eased > 0.92 ? "1" : "0";
 
-      // light pulse travelling along the path
-      if (reduced) {
+      // light pulse travelling along the path (only once fully drawn)
+      if (reduced || drawT < 1) {
         pulse.style.opacity = "0";
       } else {
         const length = path.getTotalLength();
@@ -156,7 +175,7 @@ export function TargetConnector() {
       <polygon
         ref={arrowRef}
         fill="var(--color-sky-300)"
-        className="[filter:drop-shadow(0_0_5px_rgba(125,211,252,0.9))]"
+        className="transition-opacity duration-200 [filter:drop-shadow(0_0_5px_rgba(125,211,252,0.9))]"
       />
       <circle
         ref={pulseRef}

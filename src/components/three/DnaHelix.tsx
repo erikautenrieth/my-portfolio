@@ -8,8 +8,8 @@ import type { MotionValue } from "motion/react";
 
 // Realistic B-DNA look: strands offset by ~126° creates the characteristic
 // major/minor grooves; ~10 base pairs per turn; deep-blue/silver palette.
-const TURNS = 2.4;
-const HEIGHT = 16;
+const TURNS = 3.2;
+const HEIGHT = 22;
 const N = 150;
 const R = 2.1;
 const PHASE_OFFSET = 2.2; // ~126° — real DNA groove signature (not 180°)
@@ -125,8 +125,9 @@ function buildRungs(): Rung[] {
 const RUNGS = buildRungs();
 
 // Movie-style target lock: each section aims at a real base pair of the
-// helix, chosen by height along the camera track.
-const TARGET_YS = [1.4, -0.2, -1.8, -3.4, -5.0, -6.6, -8.2];
+// helix, chosen by height along the camera track (matched to the camera
+// lerp so the active target is always centered).
+const TARGET_YS = [0.8, -1.4, -3.6, -5.8, -8.0, -10.2, -12.4];
 const TARGET_RUNGS = TARGET_YS.map((y) => {
   let best = 0;
   let bestDistance = Infinity;
@@ -246,8 +247,9 @@ export function NeuralDna({
       size.width < 768 ? (heroFocus ? 0.5 : 1.4) : heroFocus ? 0.9 : 3.1;
     g.position.x = THREE.MathUtils.damp(g.position.x, targetX, 1.6, dt);
 
-    // calm rotation + pointer parallax (state.pointer is normalized -1..1)
-    if (!reduced) g.rotation.y += dt * (0.1 + progress * 0.08);
+    // calm rotation — slows right down inside sections so the target lock
+    // and callout stay steady — plus pointer parallax
+    if (!reduced) g.rotation.y += dt * (heroFocus ? 0.1 : 0.045);
     g.rotation.x = THREE.MathUtils.damp(g.rotation.x, state.pointer.y * -0.1, 2, dt);
     g.rotation.z = THREE.MathUtils.damp(g.rotation.z, TILT + state.pointer.x * 0.05, 2, dt);
 
@@ -255,7 +257,7 @@ export function NeuralDna({
     // In sections the view pans left so the helix (and its target) sits in
     // the right third of the screen, clear of the content column.
     const viewShift = heroFocus ? 0 : size.width < 768 ? 0.7 : 2.5;
-    const yLocal = THREE.MathUtils.lerp(3.0, -8.2, progress);
+    const yLocal = THREE.MathUtils.lerp(3.0, -12.4, progress);
     const axisX = g.position.x - Math.sin(TILT) * yLocal;
     const axisY = Math.cos(TILT) * yLocal;
     const breatheX = reduced ? 0 : Math.sin(time * 0.15) * 0.35;
