@@ -2,6 +2,7 @@ import type { Lang } from "@/i18n";
 import { LanguageToggle } from "@/components/ui/LanguageToggle";
 import { SmoothScroll } from "@/components/ui/SmoothScroll";
 import { SceneLoader } from "@/components/three/SceneLoader";
+import { CustomCursor } from "@/components/cursor/CustomCursor";
 import { Hero } from "@/components/sections/Hero";
 import { About } from "@/components/sections/About";
 import { Projects } from "@/components/sections/Projects";
@@ -16,6 +17,7 @@ export function Portfolio({ lang }: { lang: Lang }) {
     <SmoothScroll>
       <main className="relative flex-1">
         <SceneLoader />
+        <CustomCursor />
         <LanguageToggle lang={lang} />
         <Hero lang={lang} />
         <About lang={lang} />
