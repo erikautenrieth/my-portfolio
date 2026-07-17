@@ -1,6 +1,7 @@
 import type { Lang } from "@/i18n";
 import { LanguageToggle } from "@/components/ui/LanguageToggle";
 import { SmoothScroll } from "@/components/ui/SmoothScroll";
+import { SceneLoader } from "@/components/three/SceneLoader";
 import { Hero } from "@/components/sections/Hero";
 import { About } from "@/components/sections/About";
 import { Projects } from "@/components/sections/Projects";
@@ -14,6 +15,7 @@ export function Portfolio({ lang }: { lang: Lang }) {
   return (
     <SmoothScroll>
       <main className="relative flex-1">
+        <SceneLoader />
         <LanguageToggle lang={lang} />
         <Hero lang={lang} />
         <About lang={lang} />
