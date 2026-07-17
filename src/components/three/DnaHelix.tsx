@@ -4,6 +4,7 @@ import { useMemo, useRef } from "react";
 import * as THREE from "three";
 import { useFrame, useThree } from "@react-three/fiber";
 import { Instance, Instances } from "@react-three/drei";
+import type { MotionValue } from "motion/react";
 
 // Style reference: prototype/neural-dna.html — same parameters, colors, timings.
 const TURNS = 2.4;
@@ -92,7 +93,29 @@ function makeHaloTexture() {
   return new THREE.CanvasTexture(canvas);
 }
 
-export function NeuralDna({ reduced }: { reduced: boolean }) {
+// Scroll-driven camera path along the helix (world space).
+const CAMERA_PATH = new THREE.CatmullRomCurve3([
+  new THREE.Vector3(0, 0, 13),
+  new THREE.Vector3(2.2, -1.5, 11.5),
+  new THREE.Vector3(-1.5, -3.5, 10.5),
+  new THREE.Vector3(2.5, -6, 11.5),
+  new THREE.Vector3(0, -8, 13),
+]);
+const LOOK_PATH = new THREE.CatmullRomCurve3([
+  new THREE.Vector3(0, 0, 0),
+  new THREE.Vector3(2.8, -1, 0),
+  new THREE.Vector3(1.5, -4, 0),
+  new THREE.Vector3(3, -6.5, 0),
+  new THREE.Vector3(2, -8, 0),
+]);
+
+export function NeuralDna({
+  reduced,
+  scroll,
+}: {
+  reduced: boolean;
+  scroll: MotionValue<number>;
+}) {
   const group = useRef<THREE.Group>(null!);
   const scanRing = useRef<THREE.Mesh>(null!);
   const nodeRefs = useRef<(THREE.Mesh | null)[]>([]);
@@ -133,26 +156,48 @@ export function NeuralDna({ reduced }: { reduced: boolean }) {
   }, []);
 
   const { size } = useThree();
+  const cameraTarget = useMemo(() => new THREE.Vector3(), []);
+  const lookTarget = useMemo(() => new THREE.Vector3(0, 0, 0), []);
 
   useFrame((state, rawDelta) => {
     const dt = Math.min(rawDelta, 0.05);
     const time = state.clock.elapsedTime;
     const g = group.current;
+    const progress = reduced ? 0 : scroll.get();
 
     // responsive: pull helix toward center on narrow screens
     const targetX = size.width < 768 ? 1.4 : 3.4;
     g.position.x = THREE.MathUtils.damp(g.position.x, targetX, 2, dt);
 
     // rotation + pointer parallax (state.pointer is normalized -1..1)
-    if (!reduced) g.rotation.y += dt * 0.14;
+    if (!reduced) g.rotation.y += dt * (0.14 + progress * 0.1);
     g.rotation.x = THREE.MathUtils.damp(g.rotation.x, state.pointer.y * -0.12, 2, dt);
     g.rotation.z = THREE.MathUtils.damp(g.rotation.z, 0.35 + state.pointer.x * 0.05, 2, dt);
 
-    // camera breathing
-    if (!reduced) {
-      state.camera.position.x = Math.sin(time * 0.15) * 0.35;
-      state.camera.position.y = Math.sin(time * 0.2) * 0.25;
-    }
+    // scroll-driven camera path + breathing
+    CAMERA_PATH.getPoint(progress, cameraTarget);
+    const breatheX = reduced ? 0 : Math.sin(time * 0.15) * 0.35;
+    const breatheY = reduced ? 0 : Math.sin(time * 0.2) * 0.25;
+    state.camera.position.x = THREE.MathUtils.damp(
+      state.camera.position.x,
+      cameraTarget.x + breatheX,
+      2.5,
+      dt,
+    );
+    state.camera.position.y = THREE.MathUtils.damp(
+      state.camera.position.y,
+      cameraTarget.y + breatheY,
+      2.5,
+      dt,
+    );
+    state.camera.position.z = THREE.MathUtils.damp(
+      state.camera.position.z,
+      cameraTarget.z,
+      2.5,
+      dt,
+    );
+    LOOK_PATH.getPoint(progress, lookTarget);
+    state.camera.lookAt(lookTarget);
 
     // scan ring sweep
     const sweep = reduced ? 0.5 : (time * 0.1) % 1;

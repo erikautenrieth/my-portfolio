@@ -5,12 +5,14 @@ import { Canvas } from "@react-three/fiber";
 import { AdaptiveDpr, PerformanceMonitor } from "@react-three/drei";
 import { Bloom, EffectComposer } from "@react-three/postprocessing";
 import { useReducedMotion } from "motion/react";
+import { useScroll } from "motion/react";
 import { NeuralDna } from "./DnaHelix";
 import { ParticleField } from "./ParticleField";
 
 export default function Scene() {
   const reduced = useReducedMotion();
   const [dpr, setDpr] = useState(1.5);
+  const { scrollYProgress } = useScroll();
 
   return (
     <div className="fixed inset-0 -z-10" aria-hidden>
@@ -21,7 +23,7 @@ export default function Scene() {
           onDecline={() => setDpr(1)}
           onIncline={() => setDpr(2)}
         >
-          <NeuralDna reduced={!!reduced} />
+          <NeuralDna reduced={!!reduced} scroll={scrollYProgress} />
           <ParticleField />
           <EffectComposer>
             <Bloom intensity={1.3} luminanceThreshold={0.15} mipmapBlur />
