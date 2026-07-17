@@ -26,12 +26,10 @@ export function CustomCursor() {
 
   const x = useMotionValue(-100);
   const y = useMotionValue(-100);
-  // trailing ring follows with spring physics (framework, no manual lerp/rAF)
   const ringX = useSpring(x, { stiffness: 400, damping: 40 });
   const ringY = useSpring(y, { stiffness: 400, damping: 40 });
 
   useEffect(() => {
-    // only on precise pointers (desktop) — touch devices keep native behavior
     if (!window.matchMedia("(pointer: fine)").matches) return;
     setEnabled(true);
 
@@ -45,12 +43,11 @@ export function CustomCursor() {
     const onDown = (e: PointerEvent) => {
       const particles = reduced
         ? []
-        : Array.from({ length: 10 }, () => ({
-            angle: Math.random() * Math.PI * 2,
+        : Array.from({ length: 10 }, (_, i) => ({
+            angle: (i / 10) * Math.PI * 2,
             distance: 40 + Math.random() * 50,
           }));
-      const burst: Burst = { id: burstId++, x: e.clientX, y: e.clientY, particles };
-      setBursts((current) => [...current, burst]);
+      setBursts((c) => [...c, { id: burstId++, x: e.clientX, y: e.clientY, particles }]);
     };
 
     window.addEventListener("pointermove", onMove, { passive: true });
@@ -64,22 +61,91 @@ export function CustomCursor() {
   if (!enabled) return null;
 
   return (
-    <div className="pointer-events-none fixed inset-0 z-[100]" aria-hidden>
-      {/* dot */}
+    <div className="pointer-events-none fixed inset-0 z-100" aria-hidden>
+      {/* glowing dot */}
       <motion.div
-        className="absolute h-1.5 w-1.5 rounded-full bg-cyan-400"
-        style={{ x, y, translateX: "-50%", translateY: "-50%" }}
+        className="absolute rounded-full"
+        style={{ x, y, translateX: "-50%", translateY: "-50%", width: 5, height: 5 }}
+        animate={{
+          backgroundColor: hovering ? "#a78bfa" : "#22d3ee",
+          boxShadow: hovering
+            ? "0 0 8px 2px rgba(167,139,250,0.95)"
+            : "0 0 8px 2px rgba(34,211,238,0.95)",
+        }}
+        transition={{ duration: 0.2 }}
       />
-      {/* trailing ring */}
+
+      {/* ring container — spring-follows, animates size */}
       <motion.div
-        className={`absolute rounded-full border transition-colors duration-200 ${
-          hovering ? "border-violet-400" : "border-cyan-400/60"
-        }`}
+        className="absolute"
         style={{ x: ringX, y: ringY, translateX: "-50%", translateY: "-50%" }}
-        animate={{ width: hovering ? 44 : 28, height: hovering ? 44 : 28 }}
+        animate={{ width: hovering ? 52 : 34, height: hovering ? 52 : 34 }}
         transition={{ type: "spring", stiffness: 500, damping: 30 }}
-      />
-      {/* click shockwave + particle burst */}
+      >
+        {/* dim full base ring */}
+        <motion.div
+          className="absolute inset-0 rounded-full"
+          animate={{
+            boxShadow: hovering
+              ? "inset 0 0 0 1px rgba(167,139,250,0.18)"
+              : "inset 0 0 0 1px rgba(34,211,238,0.14)",
+          }}
+          transition={{ duration: 0.2 }}
+        />
+
+        {/* rotating scanning arc */}
+        {!reduced && (
+          <motion.div
+            className="absolute inset-0 rounded-full"
+            animate={{
+              rotate: 360,
+              filter: hovering
+                ? "drop-shadow(0 0 5px rgba(167,139,250,0.9))"
+                : "drop-shadow(0 0 5px rgba(34,211,238,0.9))",
+              background: hovering
+                ? "conic-gradient(from 0deg, rgba(167,139,250,1) 0deg 110deg, transparent 110deg 360deg)"
+                : "conic-gradient(from 0deg, rgba(34,211,238,1) 0deg 110deg, transparent 110deg 360deg)",
+            }}
+            style={{
+              WebkitMask:
+                "radial-gradient(farthest-side, transparent calc(100% - 2px), black calc(100% - 2px))",
+              mask: "radial-gradient(farthest-side, transparent calc(100% - 2px), black calc(100% - 2px))",
+            }}
+            transition={{
+              rotate: { duration: 2.5, repeat: Infinity, ease: "linear" },
+              filter: { duration: 0.2 },
+              background: { duration: 0.2 },
+            }}
+          />
+        )}
+
+        {/* counter-rotating short arc (appears on hover) */}
+        {!reduced && hovering && (
+          <motion.div
+            className="absolute inset-0 rounded-full"
+            initial={{ opacity: 0 }}
+            animate={{
+              rotate: -360,
+              opacity: 1,
+            }}
+            exit={{ opacity: 0 }}
+            style={{
+              background:
+                "conic-gradient(from 180deg, rgba(34,211,238,0.6) 0deg 50deg, transparent 50deg 360deg)",
+              WebkitMask:
+                "radial-gradient(farthest-side, transparent calc(100% - 2px), black calc(100% - 2px))",
+              mask: "radial-gradient(farthest-side, transparent calc(100% - 2px), black calc(100% - 2px))",
+              filter: "drop-shadow(0 0 3px rgba(34,211,238,0.6))",
+            }}
+            transition={{
+              rotate: { duration: 1.8, repeat: Infinity, ease: "linear" },
+              opacity: { duration: 0.15 },
+            }}
+          />
+        )}
+      </motion.div>
+
+      {/* click burst */}
       <AnimatePresence>
         {bursts.map((burst) => (
           <motion.div
@@ -89,24 +155,28 @@ export function CustomCursor() {
             exit={{ opacity: 0 }}
           >
             <motion.div
-              className="absolute rounded-full border border-cyan-400"
-              initial={{ width: 8, height: 8, opacity: 0.9, x: -4, y: -4 }}
-              animate={{
-                width: 90,
-                height: 90,
-                opacity: 0,
-                x: -45,
-                y: -45,
+              className="absolute rounded-full"
+              style={{
+                border: "1px solid rgba(34,211,238,0.85)",
+                boxShadow: "0 0 10px rgba(34,211,238,0.5)",
               }}
+              initial={{ width: 8, height: 8, opacity: 0.9, x: -4, y: -4 }}
+              animate={{ width: 90, height: 90, opacity: 0, x: -45, y: -45 }}
               transition={{ duration: 0.55, ease: "easeOut" }}
               onAnimationComplete={() =>
-                setBursts((current) => current.filter((b) => b.id !== burst.id))
+                setBursts((c) => c.filter((b) => b.id !== burst.id))
               }
             />
             {burst.particles.map((particle, i) => (
               <motion.div
                 key={i}
-                className="absolute h-1 w-1 rounded-full bg-cyan-300"
+                className="absolute rounded-full"
+                style={{
+                  width: 3,
+                  height: 3,
+                  backgroundColor: "#67e8f9",
+                  boxShadow: "0 0 5px rgba(34,211,238,0.9)",
+                }}
                 initial={{ x: 0, y: 0, opacity: 1 }}
                 animate={{
                   x: Math.cos(particle.angle) * particle.distance,
