@@ -4,9 +4,7 @@ import { SmoothScroll } from "@/components/ui/SmoothScroll";
 import { SectionReveal } from "@/components/ui/SectionReveal";
 import { TargetConnector } from "@/components/ui/TargetConnector";
 import { SceneLoader } from "@/components/three/SceneLoader";
-import { CustomCursor } from "@/components/cursor/CustomCursor";
-import { DnaTrail } from "@/components/cursor/DnaTrail";
-import { MoleculeParticles } from "@/components/cursor/MoleculeParticles";
+import { PrecisionCursor } from "@/components/cursor/PrecisionCursor";
 import { Hero } from "@/components/sections/Hero";
 import { About } from "@/components/sections/About";
 import { Projects } from "@/components/sections/Projects";
@@ -32,9 +30,7 @@ export function Portfolio({ lang }: { lang: Lang }) {
       <main className="relative flex-1">
         <SceneLoader />
         <TargetConnector />
-        <MoleculeParticles />
-        <DnaTrail />
-        <CustomCursor />
+        <PrecisionCursor />
         <LanguageToggle lang={lang} />
         <Hero lang={lang} />
         {sections.map((section, i) => (
