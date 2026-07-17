@@ -6,10 +6,10 @@ import { AdaptiveDpr, PerformanceMonitor } from "@react-three/drei";
 import { Bloom, EffectComposer } from "@react-three/postprocessing";
 import { useReducedMotion } from "motion/react";
 import { useScroll } from "motion/react";
-import { NeuralDna } from "./DnaHelix";
+import { NeuralDna, type DnaAnnotation } from "./DnaHelix";
 import { ParticleField } from "./ParticleField";
 
-export default function Scene() {
+export default function Scene({ annotations }: { annotations: DnaAnnotation[] }) {
   const reduced = useReducedMotion();
   const [dpr, setDpr] = useState(1.5);
   const { scrollYProgress } = useScroll();
@@ -23,7 +23,7 @@ export default function Scene() {
           onDecline={() => setDpr(1)}
           onIncline={() => setDpr(2)}
         >
-          <NeuralDna reduced={!!reduced} scroll={scrollYProgress} />
+          <NeuralDna reduced={!!reduced} scroll={scrollYProgress} annotations={annotations} />
           <ParticleField />
           <EffectComposer>
             <Bloom intensity={1.3} luminanceThreshold={0.15} mipmapBlur />

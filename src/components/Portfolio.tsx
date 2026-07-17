@@ -1,4 +1,5 @@
 import type { Lang } from "@/i18n";
+import { dict } from "@/i18n";
 import { LanguageToggle } from "@/components/ui/LanguageToggle";
 import { SmoothScroll } from "@/components/ui/SmoothScroll";
 import { SceneLoader } from "@/components/three/SceneLoader";
@@ -13,10 +14,21 @@ import { Publications } from "@/components/sections/Publications";
 import { Contact } from "@/components/sections/Contact";
 
 export function Portfolio({ lang }: { lang: Lang }) {
+  const s = dict[lang].sections;
+  const annotations = [
+    s.about,
+    s.projects,
+    s.experience,
+    s.skills,
+    s.education,
+    s.publications,
+    s.contact,
+  ].map((label) => ({ label }));
+
   return (
     <SmoothScroll>
       <main className="relative flex-1">
-        <SceneLoader />
+        <SceneLoader annotations={annotations} />
         <CustomCursor />
         <LanguageToggle lang={lang} />
         <Hero lang={lang} />
