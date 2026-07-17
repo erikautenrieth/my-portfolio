@@ -31,7 +31,7 @@ export function CustomCursor() {
 
   useEffect(() => {
     if (!window.matchMedia("(pointer: fine)").matches) return;
-    setEnabled(true);
+    const raf = requestAnimationFrame(() => setEnabled(true));
 
     const onMove = (e: PointerEvent) => {
       x.set(e.clientX);
@@ -53,6 +53,7 @@ export function CustomCursor() {
     window.addEventListener("pointermove", onMove, { passive: true });
     window.addEventListener("pointerdown", onDown);
     return () => {
+      cancelAnimationFrame(raf);
       window.removeEventListener("pointermove", onMove);
       window.removeEventListener("pointerdown", onDown);
     };

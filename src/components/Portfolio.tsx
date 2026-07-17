@@ -4,6 +4,8 @@ import { LanguageToggle } from "@/components/ui/LanguageToggle";
 import { SmoothScroll } from "@/components/ui/SmoothScroll";
 import { SceneLoader } from "@/components/three/SceneLoader";
 import { CustomCursor } from "@/components/cursor/CustomCursor";
+import { DnaTrail } from "@/components/cursor/DnaTrail";
+import { MoleculeParticles } from "@/components/cursor/MoleculeParticles";
 import { Hero } from "@/components/sections/Hero";
 import { About } from "@/components/sections/About";
 import { Projects } from "@/components/sections/Projects";
@@ -29,6 +31,8 @@ export function Portfolio({ lang }: { lang: Lang }) {
     <SmoothScroll>
       <main className="relative flex-1">
         <SceneLoader annotations={annotations} />
+        <MoleculeParticles />
+        <DnaTrail />
         <CustomCursor />
         <LanguageToggle lang={lang} />
         <Hero lang={lang} />

@@ -18,9 +18,22 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://erikautenrieth.github.io/my-portfolio"),
   title: "Erik Autenrieth — AI Engineer",
   description:
     "AI Engineer · Data Scientist · Full Stack Developer. LLM agents, RAG systems, MLOps and full-stack delivery.",
+  alternates: {
+    canonical: "/",
+    languages: { en: "/", de: "/de" },
+  },
+  openGraph: {
+    title: "Erik Autenrieth — AI Engineer",
+    description:
+      "AI Engineer · Data Scientist · Full Stack Developer. LLM agents, RAG systems, MLOps and full-stack delivery.",
+    type: "website",
+    locale: "en",
+    alternateLocale: "de",
+  },
 };
 
 export default function RootLayout({

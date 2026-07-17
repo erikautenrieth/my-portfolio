@@ -25,19 +25,22 @@ function helixPoint(t: number, phase: number, target = new THREE.Vector3()) {
   return target.set(Math.cos(angle) * R, (t - 0.5) * HEIGHT, Math.sin(angle) * R);
 }
 
-function useStrandPoints(phase: number) {
-  return useMemo(
-    () =>
-      Array.from({ length: N }, (_, i) => ({
-        position: helixPoint(i / (N - 1), phase).toArray() as [number, number, number],
-        scale: 0.75 + 0.5 * Math.random(),
-      })),
-    [phase],
-  );
+// Static random geometry is generated once at module load (client-only file),
+// not during render — keeps render functions pure.
+function buildStrandPoints(phase: number) {
+  return Array.from({ length: N }, (_, i) => ({
+    position: helixPoint(i / (N - 1), phase).toArray() as [number, number, number],
+    scale: 0.75 + 0.5 * Math.random(),
+  }));
 }
 
-function Strand({ color, phase }: { color: THREE.Color; phase: number }) {
-  const points = useStrandPoints(phase);
+const STRAND_POINTS: Record<"a" | "b", ReturnType<typeof buildStrandPoints>> = {
+  a: buildStrandPoints(0),
+  b: buildStrandPoints(Math.PI),
+};
+
+function Strand({ color, strand }: { color: THREE.Color; strand: "a" | "b" }) {
+  const points = STRAND_POINTS[strand];
   return (
     <Instances limit={N}>
       <sphereGeometry args={[0.05, 12, 12]} />
@@ -79,29 +82,29 @@ interface Rung {
 
 const UP = new THREE.Vector3(0, 1, 0);
 
-function useRungs(): Rung[] {
-  return useMemo(() => {
-    const rungs: Rung[] = [];
-    for (let i = 4; i < N - 4; i += RUNG_EVERY) {
-      const t = i / (N - 1);
-      const a = helixPoint(t, 0);
-      const b = helixPoint(t, Math.PI);
-      const direction = b.clone().sub(a);
-      rungs.push({
-        a,
-        b,
-        mid: a.clone().lerp(b, 0.5),
-        seed: Math.random() * Math.PI * 2,
-        quaternion: new THREE.Quaternion().setFromUnitVectors(
-          UP,
-          direction.clone().normalize(),
-        ),
-        length: direction.length(),
-      });
-    }
-    return rungs;
-  }, []);
+function buildRungs(): Rung[] {
+  const rungs: Rung[] = [];
+  for (let i = 4; i < N - 4; i += RUNG_EVERY) {
+    const t = i / (N - 1);
+    const a = helixPoint(t, 0);
+    const b = helixPoint(t, Math.PI);
+    const direction = b.clone().sub(a);
+    rungs.push({
+      a,
+      b,
+      mid: a.clone().lerp(b, 0.5),
+      seed: Math.random() * Math.PI * 2,
+      quaternion: new THREE.Quaternion().setFromUnitVectors(
+        UP,
+        direction.clone().normalize(),
+      ),
+      length: direction.length(),
+    });
+  }
+  return rungs;
 }
+
+const RUNGS = buildRungs();
 
 function makeHaloTexture() {
   const canvas = document.createElement("canvas");
@@ -114,6 +117,30 @@ function makeHaloTexture() {
   ctx.fillRect(0, 0, 256, 256);
   return new THREE.CanvasTexture(canvas);
 }
+
+// Client-only module (dynamic import, ssr: false) — guard keeps it robust.
+const HALO_TEXTURE = typeof document !== "undefined" ? makeHaloTexture() : null;
+
+const TRAVELERS = Array.from({ length: TRAVELER_COUNT }, (_, i) => ({
+  t: Math.random(),
+  speed: 0.05 + Math.random() * 0.04,
+  phase: i % 2 ? Math.PI : 0,
+  history: [] as THREE.Vector3[],
+}));
+
+function buildStreamPositions() {
+  const positions = new Float32Array(STREAM_COUNT * 3);
+  for (let i = 0; i < STREAM_COUNT; i++) {
+    const angle = Math.random() * Math.PI * 2;
+    const radius = Math.random() * 0.22;
+    positions[i * 3] = Math.cos(angle) * radius;
+    positions[i * 3 + 1] = (Math.random() - 0.5) * HEIGHT;
+    positions[i * 3 + 2] = Math.sin(angle) * radius;
+  }
+  return positions;
+}
+
+const STREAM_POSITIONS = buildStreamPositions();
 
 export interface DnaAnnotation {
   label: string;
@@ -147,36 +174,13 @@ export function NeuralDna({
   const firingRefs = useRef<(THREE.Mesh | null)[]>([]);
   const streamRef = useRef<THREE.Points>(null!);
 
-  const rungs = useRungs();
-  const haloTexture = useMemo(makeHaloTexture, []);
-
-  const travelers = useMemo(
-    () =>
-      Array.from({ length: TRAVELER_COUNT }, (_, i) => ({
-        t: Math.random(),
-        speed: 0.05 + Math.random() * 0.04,
-        phase: i % 2 ? Math.PI : 0,
-        history: [] as THREE.Vector3[],
-      })),
-    [],
-  );
+  const rungs = RUNGS;
+  const travelers = TRAVELERS;
 
   const firings = useRef([
     { t: 1.1, rung: 0 },
     { t: 1.1, rung: 0 },
   ]);
-
-  const streamPositions = useMemo(() => {
-    const positions = new Float32Array(STREAM_COUNT * 3);
-    for (let i = 0; i < STREAM_COUNT; i++) {
-      const angle = Math.random() * Math.PI * 2;
-      const radius = Math.random() * 0.22;
-      positions[i * 3] = Math.cos(angle) * radius;
-      positions[i * 3 + 1] = (Math.random() - 0.5) * HEIGHT;
-      positions[i * 3 + 2] = Math.sin(angle) * radius;
-    }
-    return positions;
-  }, []);
 
   const { size } = useThree();
   const lookTarget = useMemo(() => new THREE.Vector3(0, 0, 0), []);
@@ -286,8 +290,8 @@ export function NeuralDna({
 
   return (
     <group ref={group} position={[2.4, 0, 0]} rotation={[0, 0, TILT]}>
-      <Strand color={CYAN} phase={0} />
-      <Strand color={VIOLET} phase={Math.PI} />
+      <Strand color={CYAN} strand="a" />
+      <Strand color={VIOLET} strand="b" />
       <StrandTube color={CYAN} phase={0} />
       <StrandTube color={VIOLET} phase={Math.PI} />
 
@@ -394,7 +398,7 @@ export function NeuralDna({
         <bufferGeometry>
           <bufferAttribute
             attach="attributes-position"
-            args={[streamPositions, 3]}
+            args={[STREAM_POSITIONS, 3]}
           />
         </bufferGeometry>
         <pointsMaterial
@@ -409,7 +413,7 @@ export function NeuralDna({
 
       <sprite position={[0, 0, -3]} scale={18}>
         <spriteMaterial
-          map={haloTexture}
+          map={HALO_TEXTURE}
           color="#0e7490"
           transparent
           opacity={0.16}
@@ -419,7 +423,7 @@ export function NeuralDna({
       </sprite>
       <sprite position={[1.5, -2, -4]} scale={12}>
         <spriteMaterial
-          map={haloTexture}
+          map={HALO_TEXTURE}
           color="#6d28d9"
           transparent
           opacity={0.12}
