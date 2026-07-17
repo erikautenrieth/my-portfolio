@@ -1,30 +1,29 @@
 import type { Lang } from "@/i18n";
-import { dict } from "@/i18n";
 import { LanguageToggle } from "@/components/ui/LanguageToggle";
+import { SmoothScroll } from "@/components/ui/SmoothScroll";
+import { Hero } from "@/components/sections/Hero";
+import { About } from "@/components/sections/About";
+import { Projects } from "@/components/sections/Projects";
+import { Experience } from "@/components/sections/Experience";
+import { Skills } from "@/components/sections/Skills";
+import { Education } from "@/components/sections/Education";
+import { Publications } from "@/components/sections/Publications";
+import { Contact } from "@/components/sections/Contact";
 
 export function Portfolio({ lang }: { lang: Lang }) {
-  const d = dict[lang];
   return (
-    <main className="flex-1">
-      <LanguageToggle lang={lang} />
-      <section id="hero" className="min-h-screen flex items-center justify-center">
-        <h1 className="font-display text-5xl">{d.hero.name}</h1>
-      </section>
-      {(
-        [
-          ["about", d.sections.about],
-          ["projects", d.sections.projects],
-          ["experience", d.sections.experience],
-          ["skills", d.sections.skills],
-          ["education", d.sections.education],
-          ["publications", d.sections.publications],
-          ["contact", d.sections.contact],
-        ] as const
-      ).map(([id, label]) => (
-        <section key={id} id={id} className="min-h-screen flex items-center justify-center">
-          <h2 className="font-display text-3xl text-cyan-400">{label}</h2>
-        </section>
-      ))}
-    </main>
+    <SmoothScroll>
+      <main className="relative flex-1">
+        <LanguageToggle lang={lang} />
+        <Hero lang={lang} />
+        <About lang={lang} />
+        <Projects lang={lang} />
+        <Experience lang={lang} />
+        <Skills lang={lang} />
+        <Education lang={lang} />
+        <Publications lang={lang} />
+        <Contact lang={lang} />
+      </main>
+    </SmoothScroll>
   );
 }
