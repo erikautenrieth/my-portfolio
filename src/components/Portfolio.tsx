@@ -2,6 +2,7 @@ import type { Lang } from "@/i18n";
 import { LanguageToggle } from "@/components/ui/LanguageToggle";
 import { SmoothScroll } from "@/components/ui/SmoothScroll";
 import { SectionReveal } from "@/components/ui/SectionReveal";
+import { TargetConnector } from "@/components/ui/TargetConnector";
 import { SceneLoader } from "@/components/three/SceneLoader";
 import { CustomCursor } from "@/components/cursor/CustomCursor";
 import { DnaTrail } from "@/components/cursor/DnaTrail";
@@ -30,6 +31,7 @@ export function Portfolio({ lang }: { lang: Lang }) {
     <SmoothScroll>
       <main className="relative flex-1">
         <SceneLoader />
+        <TargetConnector />
         <MoleculeParticles />
         <DnaTrail />
         <CustomCursor />

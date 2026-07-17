@@ -23,7 +23,14 @@ export function SectionHeading({
       >
         {seq !== undefined && (
           <span className="flex items-center gap-3">
-            <svg width="22" height="22" viewBox="0 0 26 26" aria-hidden className="text-sky-400">
+            <svg
+              data-seq-anchor={seq - 1}
+              width="22"
+              height="22"
+              viewBox="0 0 26 26"
+              aria-hidden
+              className="text-sky-400"
+            >
               <path
                 d="M1 8 V1 H8 M18 1 H25 V8 M25 18 V25 H18 M8 25 H1 V18"
                 fill="none"

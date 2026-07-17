@@ -8,6 +8,7 @@
 
 @theme {
   --animate-marquee: marquee 40s linear infinite;
+  --animate-hud-dash: hud-dash 1.2s linear infinite;
 
   @keyframes marquee {
     from {
@@ -15,6 +16,12 @@
     }
     to {
       transform: translateX(-50%);
+    }
+  }
+
+  @keyframes hud-dash {
+    to {
+      stroke-dashoffset: -12;
     }
   }
 }

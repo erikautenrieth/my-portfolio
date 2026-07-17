@@ -408,7 +408,10 @@ export function NeuralDna({
           zIndexRange={[10, 0]}
           style={{ pointerEvents: "none" }}
         >
-          <div className={`target-lock ${active === i ? "target-lock-active" : ""}`}>
+          <div
+            data-target-index={i}
+            className={`target-lock ${active === i ? "target-lock-active" : ""}`}
+          >
             <span />
             <span />
             <span />
