@@ -7,7 +7,7 @@ import { GlassCard } from "@/components/ui/GlassCard";
 export function Publications({ lang }: { lang: Lang }) {
   const d = dict[lang];
   return (
-    <section id="publications" className="mx-auto max-w-6xl px-6 py-32">
+    <section id="publications" className="mx-auto max-w-6xl px-6 py-32 lg:pr-[36%]">
       <SectionHeading seq={6} molecule={0}>{d.sections.publications}</SectionHeading>
       <div className="grid gap-6">
         {publications.map((publication) => (

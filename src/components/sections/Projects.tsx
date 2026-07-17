@@ -13,7 +13,7 @@ const linkClass =
 export function Projects({ lang }: { lang: Lang }) {
   const d = dict[lang];
   return (
-    <section id="projects" className="mx-auto max-w-6xl px-6 py-32">
+    <section id="projects" className="mx-auto max-w-6xl px-6 py-32 lg:pr-[36%]">
       <SectionHeading seq={2} molecule={1}>{d.sections.projects}</SectionHeading>
       <div className="grid gap-8">
         {projects.map((project, i) => (
