@@ -125,8 +125,7 @@ const MOLECULES = [
   { name: "deoxyribose", formula: "C₅H₁₀O₄", Structure: Deoxyribose },
 ];
 
-// Compact, detailed molecule mark shown below section headings (unnamed —
-// purely decorative structural formulas).
+// Compact molecule shown beside section headings (unnamed, decorative).
 export function MoleculeMark({
   index,
   className = "",
@@ -137,22 +136,21 @@ export function MoleculeMark({
   const { Structure } = MOLECULES[index % MOLECULES.length];
   return (
     <motion.div
-      initial={{ opacity: 0, x: -16 }}
-      whileInView={{ opacity: 1, x: 0 }}
+      initial={{ opacity: 0, scale: 0.8 }}
+      whileInView={{ opacity: 1, scale: 1 }}
       viewport={{ once: true, margin: "-60px" }}
-      transition={{ duration: 0.8, delay: 0.15, ease: "easeOut" }}
+      transition={{ duration: 0.7, delay: 0.2, ease: "easeOut" }}
       aria-hidden
-      className={`flex items-center gap-4 text-sky-400/70 ${className}`}
+      className={`text-sky-400/70 ${className}`}
     >
       <svg
-        width="92"
-        height="82"
+        width="72"
+        height="62"
         viewBox="-16 0 182 150"
         className="shrink-0 drop-shadow-[0_0_6px_rgba(56,189,248,0.4)]"
       >
         <Structure />
       </svg>
-      <span className="hidden h-px w-24 bg-linear-to-r from-sky-400/40 to-transparent md:block" />
     </motion.div>
   );
 }

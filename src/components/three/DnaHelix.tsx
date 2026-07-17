@@ -251,8 +251,10 @@ export function NeuralDna({
     g.rotation.x = THREE.MathUtils.damp(g.rotation.x, state.pointer.y * -0.1, 2, dt);
     g.rotation.z = THREE.MathUtils.damp(g.rotation.z, TILT + state.pointer.x * 0.05, 2, dt);
 
-    // scroll-driven camera: track the tilted helix axis from top to bottom,
-    // keeping the active annotation in frame
+    // scroll-driven camera: track the tilted helix axis from top to bottom.
+    // In sections the view pans left so the helix (and its target) sits in
+    // the right third of the screen, clear of the content column.
+    const viewShift = heroFocus ? 0 : size.width < 768 ? 0.7 : 2.5;
     const yLocal = THREE.MathUtils.lerp(3.0, -8.2, progress);
     const axisX = g.position.x - Math.sin(TILT) * yLocal;
     const axisY = Math.cos(TILT) * yLocal;
@@ -260,7 +262,7 @@ export function NeuralDna({
     const breatheY = reduced ? 0 : Math.sin(time * 0.2) * 0.25;
     state.camera.position.x = THREE.MathUtils.damp(
       state.camera.position.x,
-      axisX + 0.4 + breatheX,
+      axisX - viewShift + 0.4 + breatheX,
       2.5,
       dt,
     );
@@ -276,7 +278,7 @@ export function NeuralDna({
       2.5,
       dt,
     );
-    lookTarget.set(axisX, axisY, 0);
+    lookTarget.set(axisX - viewShift, axisY, 0);
     state.camera.lookAt(lookTarget);
 
     // scan ring sweep
@@ -412,10 +414,14 @@ export function NeuralDna({
             data-target-index={i}
             className={`target-lock ${active === i ? "target-lock-active" : ""}`}
           >
-            <span />
-            <span />
-            <span />
-            <span />
+            <i />
+            <i />
+            <i />
+            <i />
+            <span className="absolute left-full top-1/2 h-px w-3.5 bg-sky-300/70" />
+            <span className="absolute left-[calc(100%+18px)] top-1/2 -translate-y-1/2 whitespace-nowrap border border-sky-300/30 bg-slate-950/75 px-2.5 py-1 font-mono text-[11px] tracking-[0.3em] text-sky-300 backdrop-blur-sm">
+              SEQ.{String(i + 1).padStart(2, "0")}
+            </span>
           </div>
         </Html>
       ))}

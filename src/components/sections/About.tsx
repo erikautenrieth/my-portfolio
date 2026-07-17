@@ -9,7 +9,7 @@ const linkClass =
 export function About({ lang }: { lang: Lang }) {
   const d = dict[lang];
   return (
-    <section id="about" className="mx-auto max-w-6xl px-6 py-32 lg:pr-[36%]">
+    <section id="about" className="mx-auto max-w-6xl px-6 py-32 md:pr-[34%]">
       <SectionHeading seq={1} molecule={0}>{d.sections.about}</SectionHeading>
       <p className="max-w-2xl text-lg leading-relaxed text-slate-300">{d.about.text}</p>
       <div className="mt-10 flex gap-4">

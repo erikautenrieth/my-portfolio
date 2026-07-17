@@ -6,7 +6,7 @@ import { GITHUB_URL, LINKEDIN_URL } from "@/content/links";
 export function Contact({ lang }: { lang: Lang }) {
   const d = dict[lang];
   return (
-    <section id="contact" className="mx-auto max-w-6xl px-6 py-32 lg:pr-[36%]">
+    <section id="contact" className="mx-auto max-w-6xl px-6 py-32 md:pr-[34%]">
       <SectionHeading seq={7} molecule={1}>{d.contact.heading}</SectionHeading>
       <p className="max-w-xl text-slate-300">{d.contact.text}</p>
       <div className="mt-10 flex flex-wrap gap-4">

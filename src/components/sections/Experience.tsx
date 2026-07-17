@@ -21,7 +21,7 @@ export function Experience({ lang }: { lang: Lang }) {
   const compact = experience.filter((entry) => entry.compact);
 
   return (
-    <section id="experience" className="mx-auto max-w-6xl px-6 py-32 lg:pr-[36%]">
+    <section id="experience" className="mx-auto max-w-6xl px-6 py-32 md:pr-[34%]">
       <SectionHeading seq={3} molecule={2}>{d.sections.experience}</SectionHeading>
       <div ref={ref} className="relative pl-8 md:pl-12">
         {/* growing timeline line */}

@@ -2,11 +2,12 @@
 
 import { useEffect, useRef } from "react";
 
-// HUD connector: draws an animated elbow line from the active section's
-// SEQ heading bracket to the target lock on the DNA base pair.
+// Sci-fi callout: a dot after the section heading, a clean line running
+// right, one 45° bend, ending at the target lock on the DNA base pair.
 // Updated per frame via direct DOM writes (the DNA rotates continuously).
 export function TargetConnector() {
   const pathRef = useRef<SVGPathElement>(null);
+  const dotRef = useRef<SVGCircleElement>(null);
   const svgRef = useRef<SVGSVGElement>(null);
 
   useEffect(() => {
@@ -14,8 +15,9 @@ export function TargetConnector() {
     const tick = () => {
       raf = requestAnimationFrame(tick);
       const path = pathRef.current;
+      const dot = dotRef.current;
       const svg = svgRef.current;
-      if (!path || !svg) return;
+      if (!path || !dot || !svg) return;
 
       const lock = document.querySelector<HTMLElement>(".target-lock-active");
       if (!lock) {
@@ -24,7 +26,7 @@ export function TargetConnector() {
       }
       const index = lock.dataset.targetIndex;
       const anchor = document.querySelector<HTMLElement>(
-        `[data-seq-anchor="${index}"]`,
+        `[data-heading-anchor="${index}"]`,
       );
       if (!anchor) {
         svg.style.opacity = "0";
@@ -39,17 +41,21 @@ export function TargetConnector() {
         return;
       }
 
-      // HUD routing in right angles through free space: up from the
-      // bracket, horizontally across (above heading + molecule), then
-      // straight down into the lock — never crossing text
-      const x1 = a.left + a.width / 2;
-      const x2 = b.left + b.width / 2;
-      const runwayY = Math.max(12, Math.min(a.top - 24, b.top - 44));
-      const y2 = b.top - 6;
+      const x1 = a.right + 18;
+      const y1 = a.top + a.height / 2;
+      const x2 = b.left - 8;
+      const y2 = b.top + b.height / 2;
+      const bend = Math.abs(y2 - y1);
+      const elbowX = x2 - bend;
+      // dot → horizontal run → single 45° bend into the lock
       path.setAttribute(
         "d",
-        `M ${x1} ${a.top - 4} V ${runwayY} H ${x2} V ${y2}`,
+        elbowX > x1 + 20
+          ? `M ${x1} ${y1} H ${elbowX} L ${x2} ${y2}`
+          : `M ${x1} ${y1} L ${x2} ${y2}`,
       );
+      dot.setAttribute("cx", String(x1));
+      dot.setAttribute("cy", String(y1));
       svg.style.opacity = "1";
     };
     raf = requestAnimationFrame(tick);
@@ -67,8 +73,14 @@ export function TargetConnector() {
         fill="none"
         stroke="var(--color-sky-300)"
         strokeWidth="1.5"
-        strokeDasharray="7 5"
-        className="[filter:drop-shadow(0_0_4px_rgba(125,211,252,0.7))] animate-hud-dash"
+        strokeOpacity="0.85"
+        className="[filter:drop-shadow(0_0_4px_rgba(125,211,252,0.7))]"
+      />
+      <circle
+        ref={dotRef}
+        r="3.5"
+        fill="var(--color-sky-300)"
+        className="[filter:drop-shadow(0_0_6px_rgba(125,211,252,0.9))]"
       />
     </svg>
   );
