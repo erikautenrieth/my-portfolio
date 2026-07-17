@@ -1,7 +1,7 @@
 import type { Lang } from "@/i18n";
-import { dict } from "@/i18n";
 import { LanguageToggle } from "@/components/ui/LanguageToggle";
 import { SmoothScroll } from "@/components/ui/SmoothScroll";
+import { SectionReveal } from "@/components/ui/SectionReveal";
 import { SceneLoader } from "@/components/three/SceneLoader";
 import { CustomCursor } from "@/components/cursor/CustomCursor";
 import { DnaTrail } from "@/components/cursor/DnaTrail";
@@ -16,33 +16,28 @@ import { Publications } from "@/components/sections/Publications";
 import { Contact } from "@/components/sections/Contact";
 
 export function Portfolio({ lang }: { lang: Lang }) {
-  const s = dict[lang].sections;
-  const annotations = [
-    s.about,
-    s.projects,
-    s.experience,
-    s.skills,
-    s.education,
-    s.publications,
-    s.contact,
-  ].map((label) => ({ label }));
+  const sections = [
+    <About key="about" lang={lang} />,
+    <Projects key="projects" lang={lang} />,
+    <Experience key="experience" lang={lang} />,
+    <Skills key="skills" lang={lang} />,
+    <Education key="education" lang={lang} />,
+    <Publications key="publications" lang={lang} />,
+    <Contact key="contact" lang={lang} />,
+  ];
 
   return (
     <SmoothScroll>
       <main className="relative flex-1">
-        <SceneLoader annotations={annotations} />
+        <SceneLoader />
         <MoleculeParticles />
         <DnaTrail />
         <CustomCursor />
         <LanguageToggle lang={lang} />
         <Hero lang={lang} />
-        <About lang={lang} />
-        <Projects lang={lang} />
-        <Experience lang={lang} />
-        <Skills lang={lang} />
-        <Education lang={lang} />
-        <Publications lang={lang} />
-        <Contact lang={lang} />
+        {sections.map((section, i) => (
+          <SectionReveal key={i}>{section}</SectionReveal>
+        ))}
       </main>
     </SmoothScroll>
   );

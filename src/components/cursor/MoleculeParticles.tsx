@@ -6,9 +6,10 @@ const CYAN = "#22d3ee";
 const VIOLET = "#a78bfa";
 const FUCHSIA = "#f0abfc";
 const LIGHT_CYAN = "#67e8f9";
-const BOND_COLOR = "rgba(255,255,255,0.35)";
+const ORANGE = "#fb923c";
+const BOND_COLOR = "rgba(255,255,255,0.4)";
 
-type MoleculeType = "H2O" | "CO2" | "CH4" | "RING";
+type MoleculeType = "H2O" | "CO2" | "CH4" | "RING" | "SYNAPSE";
 
 interface Particle {
   x: number;
@@ -32,21 +33,57 @@ function drawAtom(
   color: string,
   label?: string
 ): void {
+  // outer glow halo
+  ctx.shadowBlur = 10;
+  ctx.shadowColor = color;
+  ctx.fillStyle = color + "30"; // ~19% opacity
+  ctx.beginPath();
+  ctx.arc(x, y, r * 1.6, 0, Math.PI * 2);
+  ctx.fill();
+
+  // atom body
   ctx.shadowBlur = 8;
   ctx.shadowColor = color;
   ctx.fillStyle = color;
   ctx.beginPath();
   ctx.arc(x, y, r, 0, Math.PI * 2);
   ctx.fill();
+
+  // specular highlight (3D sphere effect)
   ctx.shadowBlur = 0;
+  ctx.fillStyle = "rgba(255,255,255,0.55)";
+  ctx.beginPath();
+  ctx.arc(x - r * 0.28, y - r * 0.3, r * 0.38, 0, Math.PI * 2);
+  ctx.fill();
 
   if (label) {
-    ctx.fillStyle = "#ffffff";
-    ctx.font = "bold 7px 'JetBrains Mono', monospace";
+    ctx.fillStyle = "rgba(0,0,0,0.85)";
+    ctx.font = `bold ${Math.max(5, r * 1.1)}px 'JetBrains Mono', monospace`;
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    ctx.fillText(label, x, y);
+    ctx.fillText(label, x, y + 0.5);
   }
+}
+
+function drawLonePair(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  angle: number,
+  color: string
+): void {
+  const d = 3.5;
+  const ox = Math.cos(angle) * d;
+  const oy = Math.sin(angle) * d;
+  ctx.shadowBlur = 4;
+  ctx.shadowColor = color;
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  ctx.arc(x + ox - 1.5, y + oy, 1, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(x + ox + 1.5, y + oy, 1, 0, Math.PI * 2);
+  ctx.fill();
 }
 
 function drawBond(
@@ -55,19 +92,20 @@ function drawBond(
   y1: number,
   x2: number,
   y2: number,
-  double = false
+  double = false,
+  color = BOND_COLOR
 ): void {
-  ctx.strokeStyle = BOND_COLOR;
-  ctx.lineWidth = 1.5;
-  ctx.shadowBlur = 0;
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 1.2;
+  ctx.shadowBlur = 3;
+  ctx.shadowColor = color;
 
   if (double) {
     const dx = x2 - x1;
     const dy = y2 - y1;
     const len = Math.sqrt(dx * dx + dy * dy);
-    const nx = -dy / len;
-    const ny = dx / len;
-
+    const nx = (-dy / len) * 1.2;
+    const ny = (dx / len) * 1.2;
     ctx.beginPath();
     ctx.moveTo(x1 + nx, y1 + ny);
     ctx.lineTo(x2 + nx, y2 + ny);
@@ -85,62 +123,127 @@ function drawBond(
 }
 
 function drawMolecule(ctx: CanvasRenderingContext2D, type: MoleculeType): void {
+  ctx.shadowBlur = 0;
+
   switch (type) {
     case "H2O": {
-      const dist = 22;
-      const half = (52.5 * Math.PI) / 180;
+      // H-O-H, 104.5° angle, compact
+      const dist = 13;
+      const half = (52.25 * Math.PI) / 180;
       const h1x = Math.cos(Math.PI / 2 - half) * dist;
       const h1y = Math.sin(Math.PI / 2 - half) * dist;
       const h2x = -Math.cos(Math.PI / 2 - half) * dist;
       const h2y = Math.sin(Math.PI / 2 - half) * dist;
-      drawBond(ctx, 0, 0, h1x, h1y);
-      drawBond(ctx, 0, 0, h2x, h2y);
-      drawAtom(ctx, h1x, h1y, 4, FUCHSIA, "H");
-      drawAtom(ctx, h2x, h2y, 4, FUCHSIA, "H");
-      drawAtom(ctx, 0, 0, 7, CYAN, "O");
+      drawBond(ctx, 0, 0, h1x, h1y, false, "rgba(34,211,238,0.5)");
+      drawBond(ctx, 0, 0, h2x, h2y, false, "rgba(34,211,238,0.5)");
+      drawAtom(ctx, h1x, h1y, 2.8, FUCHSIA, "H");
+      drawAtom(ctx, h2x, h2y, 2.8, FUCHSIA, "H");
+      drawAtom(ctx, 0, 0, 4.5, CYAN, "O");
+      // lone pairs on O (top)
+      drawLonePair(ctx, 0, 0, -Math.PI / 2 - 0.3, CYAN);
+      drawLonePair(ctx, 0, 0, -Math.PI / 2 + 0.3, CYAN);
       break;
     }
+
     case "CO2": {
-      drawBond(ctx, 0, 0, -24, 0, true);
-      drawBond(ctx, 0, 0, 24, 0, true);
-      drawAtom(ctx, -24, 0, 5, CYAN, "O");
-      drawAtom(ctx, 24, 0, 5, CYAN, "O");
-      drawAtom(ctx, 0, 0, 7, VIOLET, "C");
+      // O=C=O linear
+      drawBond(ctx, 0, 0, -15, 0, true, "rgba(167,139,250,0.55)");
+      drawBond(ctx, 0, 0, 15, 0, true, "rgba(167,139,250,0.55)");
+      drawAtom(ctx, -15, 0, 3.5, CYAN, "O");
+      drawAtom(ctx, 15, 0, 3.5, CYAN, "O");
+      drawAtom(ctx, 0, 0, 4.5, VIOLET, "C");
+      // lone pairs on oxygens
+      drawLonePair(ctx, -15, 0, -Math.PI / 2, CYAN);
+      drawLonePair(ctx, -15, 0, Math.PI / 2, CYAN);
+      drawLonePair(ctx, 15, 0, -Math.PI / 2, CYAN);
+      drawLonePair(ctx, 15, 0, Math.PI / 2, CYAN);
       break;
     }
+
     case "CH4": {
-      const dist = 20;
+      // tetrahedral projection
+      const dist = 12;
       const dirs = [0, 90, 180, 270].map((deg) => ({
         x: Math.cos((deg * Math.PI) / 180) * dist,
         y: Math.sin((deg * Math.PI) / 180) * dist,
       }));
-      dirs.forEach((h) => drawBond(ctx, 0, 0, h.x, h.y));
-      dirs.forEach((h) => drawAtom(ctx, h.x, h.y, 3.5, LIGHT_CYAN, "H"));
-      drawAtom(ctx, 0, 0, 7, CYAN, "C");
+      dirs.forEach((h) => drawBond(ctx, 0, 0, h.x, h.y, false, "rgba(103,232,249,0.5)"));
+      dirs.forEach((h) => drawAtom(ctx, h.x, h.y, 2.5, LIGHT_CYAN, "H"));
+      drawAtom(ctx, 0, 0, 4.5, CYAN, "C");
       break;
     }
+
     case "RING": {
-      const R = 16;
+      // Benzene — hexagon with aromatic circle inside
+      const R = 11;
       const atomColors = [CYAN, VIOLET, CYAN, VIOLET, CYAN, VIOLET];
       const atoms = Array.from({ length: 6 }, (_, i) => ({
         x: Math.cos((i / 6) * Math.PI * 2 - Math.PI / 2) * R,
         y: Math.sin((i / 6) * Math.PI * 2 - Math.PI / 2) * R,
         color: atomColors[i],
       }));
+
+      // aromatic inner circle (dashed approximation via segments)
+      ctx.save();
+      ctx.strokeStyle = "rgba(167,139,250,0.35)";
+      ctx.lineWidth = 0.8;
+      ctx.shadowBlur = 4;
+      ctx.shadowColor = VIOLET;
+      ctx.setLineDash([2, 2.5]);
+      ctx.beginPath();
+      ctx.arc(0, 0, R * 0.58, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.restore();
+
+      // bonds
       for (let i = 0; i < 6; i++) {
-        drawBond(ctx, atoms[i].x, atoms[i].y, atoms[(i + 1) % 6].x, atoms[(i + 1) % 6].y, i % 2 === 0);
+        drawBond(ctx, atoms[i].x, atoms[i].y, atoms[(i + 1) % 6].x, atoms[(i + 1) % 6].y, false, "rgba(255,255,255,0.35)");
       }
-      atoms.forEach((a) => drawAtom(ctx, a.x, a.y, 4.5, a.color));
+      atoms.forEach((a) => drawAtom(ctx, a.x, a.y, 3.2, a.color));
+      break;
+    }
+
+    case "SYNAPSE": {
+      // Neural node: central body + 3 dendrite arms with terminal buttons
+      const armLen = 14;
+      const angles = [0, (2 * Math.PI) / 3, (4 * Math.PI) / 3];
+
+      angles.forEach((angle, i) => {
+        const ex = Math.cos(angle) * armLen;
+        const ey = Math.sin(angle) * armLen;
+        // axon
+        ctx.save();
+        ctx.strokeStyle = i === 0 ? "rgba(34,211,238,0.6)" : i === 1 ? "rgba(167,139,250,0.6)" : "rgba(251,146,60,0.6)";
+        ctx.lineWidth = 1.0;
+        ctx.shadowBlur = 5;
+        ctx.shadowColor = i === 0 ? CYAN : i === 1 ? VIOLET : ORANGE;
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        // slight curve for organic look
+        ctx.quadraticCurveTo(
+          Math.cos(angle + 0.4) * armLen * 0.55,
+          Math.sin(angle + 0.4) * armLen * 0.55,
+          ex, ey
+        );
+        ctx.stroke();
+        ctx.restore();
+        // terminal button
+        drawAtom(ctx, ex, ey, 2.2, i === 0 ? CYAN : i === 1 ? VIOLET : ORANGE);
+      });
+
+      // central soma (cell body)
+      drawAtom(ctx, 0, 0, 5, CYAN);
       break;
     }
   }
 }
 
-const MOLECULE_TYPES: MoleculeType[] = ["H2O", "CO2", "CH4", "RING"];
-const MAX_PARTICLES = 8;
-const VELOCITY_THRESHOLD = 8;
-const SPAWN_THROTTLE_MS = 120;
-const MAX_LIFE_MS = 1600;
+const MOLECULE_TYPES: MoleculeType[] = ["H2O", "CO2", "CH4", "RING", "SYNAPSE"];
+const MAX_PARTICLES = 7;
+const VELOCITY_THRESHOLD = 5;
+const SPAWN_THROTTLE_MS = 110;
+const MAX_LIFE_MS = 950;
 
 export function MoleculeParticles() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -184,27 +287,27 @@ export function MoleculeParticles() {
         const velocity = Math.sqrt(dx * dx + dy * dy);
 
         if (velocity > VELOCITY_THRESHOLD && now - lastSpawnRef.current > SPAWN_THROTTLE_MS) {
-          const count = Math.random() < 0.5 ? 1 : 2;
           const ps = particlesRef.current;
+          if (ps.length >= MAX_PARTICLES) ps.shift();
 
-          for (let i = 0; i < count; i++) {
-            if (ps.length >= MAX_PARTICLES) ps.shift();
-            const angle = Math.random() * Math.PI * 2;
-            const speed = 1.5 + Math.random() * 2.0;
-            ps.push({
-              x: e.clientX,
-              y: e.clientY,
-              vx: Math.cos(angle) * speed,
-              vy: Math.sin(angle) * speed - 0.3,
-              rotation: Math.random() * Math.PI * 2,
-              rotationSpeed: (Math.random() < 0.5 ? 1 : -1) * (0.02 + Math.random() * 0.03),
-              scale: 0.1,
-              alpha: 1,
-              life: MAX_LIFE_MS,
-              maxLife: MAX_LIFE_MS,
-              type: MOLECULE_TYPES[Math.floor(Math.random() * MOLECULE_TYPES.length)],
-            });
-          }
+          // slow drift — stays near cursor
+          const angle = Math.random() * Math.PI * 2;
+          const speed = 0.3 + Math.random() * 0.5;
+
+          ps.push({
+            x: e.clientX,
+            y: e.clientY,
+            vx: Math.cos(angle) * speed,
+            vy: Math.sin(angle) * speed - 0.15,
+            rotation: Math.random() * Math.PI * 2,
+            rotationSpeed: (Math.random() < 0.5 ? 1 : -1) * (0.015 + Math.random() * 0.02),
+            scale: 0.05,
+            alpha: 1,
+            life: MAX_LIFE_MS,
+            maxLife: MAX_LIFE_MS,
+            type: MOLECULE_TYPES[Math.floor(Math.random() * MOLECULE_TYPES.length)],
+          });
+
           lastSpawnRef.current = now;
         }
       }
@@ -225,21 +328,21 @@ export function MoleculeParticles() {
       for (const p of particlesRef.current) {
         p.x += p.vx;
         p.y += p.vy;
-        p.vy += 0.015;
-        p.vx *= 0.985;
+        p.vy += 0.008;
+        p.vx *= 0.99;
         p.rotation += p.rotationSpeed;
         p.life -= dt;
 
         const lifeRatio = Math.max(0, p.life / p.maxLife);
-        p.alpha = Math.pow(lifeRatio, 0.7);
+        p.alpha = Math.pow(lifeRatio, 0.65);
 
         const elapsed = p.maxLife - p.life;
-        if (elapsed < 180) {
-          p.scale = 0.1 + (elapsed / 180) * 0.9;
-        } else if (p.life < 200) {
-          p.scale = p.life / 200;
+        if (elapsed < 150) {
+          p.scale = 0.05 + (elapsed / 150) * 0.55; // pop to 0.6
+        } else if (p.life < 180) {
+          p.scale = (p.life / 180) * 0.6;
         } else {
-          p.scale = 1.0;
+          p.scale = 0.6;
         }
 
         ctx!.save();

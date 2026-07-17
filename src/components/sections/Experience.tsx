@@ -22,7 +22,7 @@ export function Experience({ lang }: { lang: Lang }) {
 
   return (
     <section id="experience" className="mx-auto max-w-6xl px-6 py-32">
-      <SectionHeading>{d.sections.experience}</SectionHeading>
+      <SectionHeading seq={3} molecule={2}>{d.sections.experience}</SectionHeading>
       <div ref={ref} className="relative pl-8 md:pl-12">
         {/* growing timeline line */}
         <div className="absolute left-2 top-0 h-full w-px bg-white/10 md:left-3" />

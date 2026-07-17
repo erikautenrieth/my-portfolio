@@ -1,24 +1,24 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useRef } from "react";
 import * as THREE from "three";
 import { useFrame, useThree } from "@react-three/fiber";
-import { Html, Instance, Instances } from "@react-three/drei";
+import { Instance, Instances } from "@react-three/drei";
 import type { MotionValue } from "motion/react";
 
-// Style reference: prototype/neural-dna.html — same parameters, colors, timings.
+// Style: deep-blue / silver "AI hologram" palette.
 const TURNS = 2.4;
 const HEIGHT = 16;
-const N = 110;
+const N = 150;
 const R = 2.1;
-const RUNG_EVERY = 5;
+const RUNG_EVERY = 4;
 const TILT = -0.55;
 const TRAVELER_COUNT = 6;
 const TRAIL_LENGTH = 5;
 const STREAM_COUNT = 160;
 
-const CYAN = new THREE.Color("#22d3ee").multiplyScalar(0.8);
-const VIOLET = new THREE.Color("#a78bfa").multiplyScalar(0.8);
+const BLUE = new THREE.Color("#3b82f6").multiplyScalar(0.85);
+const SILVER = new THREE.Color("#cbd5e1").multiplyScalar(0.75);
 
 function helixPoint(t: number, phase: number, target = new THREE.Vector3()) {
   const angle = t * TURNS * Math.PI * 2 + phase;
@@ -43,7 +43,7 @@ function Strand({ color, strand }: { color: THREE.Color; strand: "a" | "b" }) {
   const points = STRAND_POINTS[strand];
   return (
     <Instances limit={N}>
-      <sphereGeometry args={[0.05, 12, 12]} />
+      <sphereGeometry args={[0.045, 12, 12]} />
       <meshBasicMaterial color={color} />
       {points.map((p, i) => (
         <Instance key={i} position={p.position} scale={p.scale} />
@@ -55,17 +55,17 @@ function Strand({ color, strand }: { color: THREE.Color; strand: "a" | "b" }) {
 // Continuous holographic tube along each strand (soft core + wireframe ribs).
 function StrandTube({ color, phase }: { color: THREE.Color; phase: number }) {
   const geometry = useMemo(() => {
-    const points = Array.from({ length: 80 }, (_, i) => helixPoint(i / 79, phase));
+    const points = Array.from({ length: 90 }, (_, i) => helixPoint(i / 89, phase));
     const curve = new THREE.CatmullRomCurve3(points);
-    return new THREE.TubeGeometry(curve, 180, 0.08, 10, false);
+    return new THREE.TubeGeometry(curve, 220, 0.075, 12, false);
   }, [phase]);
   return (
     <group>
       <mesh geometry={geometry}>
-        <meshBasicMaterial color={color} transparent opacity={0.2} depthWrite={false} />
+        <meshBasicMaterial color={color} transparent opacity={0.22} depthWrite={false} />
       </mesh>
       <mesh geometry={geometry}>
-        <meshBasicMaterial color={color} wireframe transparent opacity={0.08} depthWrite={false} />
+        <meshBasicMaterial color={color} wireframe transparent opacity={0.1} depthWrite={false} />
       </mesh>
     </group>
   );
@@ -142,33 +142,17 @@ function buildStreamPositions() {
 
 const STREAM_POSITIONS = buildStreamPositions();
 
-export interface DnaAnnotation {
-  label: string;
-}
-
 export function NeuralDna({
   reduced,
   scroll,
-  annotations,
 }: {
   reduced: boolean;
   scroll: MotionValue<number>;
-  annotations: DnaAnnotation[];
 }) {
   const group = useRef<THREE.Group>(null!);
   const scanRing = useRef<THREE.Mesh>(null!);
   const nodeRefs = useRef<(THREE.Mesh | null)[]>([]);
   const rungMaterialRefs = useRef<(THREE.MeshBasicMaterial | null)[]>([]);
-  const [active, setActive] = useState(-1);
-
-  useEffect(
-    () =>
-      scroll.on("change", (progress) => {
-        // 8 sections total; annotation i belongs to section i+1 (hero has none)
-        setActive(Math.round(progress * 7) - 1);
-      }),
-    [scroll],
-  );
   const travelerRefs = useRef<(THREE.Mesh | null)[]>([]);
   const trailRefs = useRef<(THREE.Mesh | null)[]>([]);
   const firingRefs = useRef<(THREE.Mesh | null)[]>([]);
@@ -290,20 +274,20 @@ export function NeuralDna({
 
   return (
     <group ref={group} position={[2.4, 0, 0]} rotation={[0, 0, TILT]}>
-      <Strand color={CYAN} strand="a" />
-      <Strand color={VIOLET} strand="b" />
-      <StrandTube color={CYAN} phase={0} />
-      <StrandTube color={VIOLET} phase={Math.PI} />
+      <Strand color={BLUE} strand="a" />
+      <Strand color={SILVER} strand="b" />
+      <StrandTube color={BLUE} phase={0} />
+      <StrandTube color={SILVER} phase={Math.PI} />
 
       {rungs.map((rung, i) => (
         <group key={i}>
           <mesh position={rung.mid} quaternion={rung.quaternion} scale={[1, rung.length, 1]}>
-            <cylinderGeometry args={[0.03, 0.03, 1, 8]} />
+            <cylinderGeometry args={[0.028, 0.028, 1, 8]} />
             <meshBasicMaterial
               ref={(el: THREE.MeshBasicMaterial | null) => {
                 rungMaterialRefs.current[i] = el;
               }}
-              color="#38bdf8"
+              color="#60a5fa"
               transparent
               opacity={0.35}
             />
@@ -314,42 +298,12 @@ export function NeuralDna({
             }}
             position={rung.mid}
           >
-            <sphereGeometry args={[0.075, 12, 12]} />
-            <meshBasicMaterial color="#e0f7ff" />
+            <sphereGeometry args={[0.07, 12, 12]} />
+            <meshBasicMaterial color="#eaf4ff" />
           </mesh>
         </group>
       ))}
 
-      {annotations.map((annotation, i) => (
-        <Html
-          key={i}
-          position={[0.3, 1.4 - i * 1.6, 0]}
-          zIndexRange={[10, 0]}
-          style={{ pointerEvents: "none" }}
-        >
-          <div
-            className={`flex items-center whitespace-nowrap font-mono text-[11px] tracking-[0.25em] text-cyan-300 transition-all duration-700 ${
-              active === i ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-2"
-            }`}
-          >
-            <svg width="26" height="26" viewBox="0 0 26 26" aria-hidden>
-              <path
-                d="M1 8 V1 H8 M18 1 H25 V8 M25 18 V25 H18 M8 25 H1 V18"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.5"
-              />
-            </svg>
-            <span className="block h-px w-14 bg-linear-to-r from-cyan-300/80 to-cyan-300/20" />
-            <span className="border border-cyan-300/30 bg-slate-950/70 px-3 py-1.5 backdrop-blur-sm">
-              <b className="mr-2 font-normal text-cyan-400">
-                SEQ.{String(i + 1).padStart(2, "0")}
-              </b>
-              <span className="uppercase text-slate-200">{annotation.label}</span>
-            </span>
-          </div>
-        </Html>
-      ))}
 
       {travelers.map((_, i) => (
         <group key={i}>
@@ -370,7 +324,7 @@ export function NeuralDna({
               scale={0.8 - j * 0.13}
             >
               <sphereGeometry args={[0.085, 12, 12]} />
-              <meshBasicMaterial color="#a5f3fc" transparent opacity={0.4 - j * 0.07} />
+              <meshBasicMaterial color="#93c5fd" transparent opacity={0.4 - j * 0.07} />
             </mesh>
           ))}
         </group>
@@ -391,7 +345,7 @@ export function NeuralDna({
 
       <mesh ref={scanRing} rotation={[Math.PI / 2, 0, 0]}>
         <torusGeometry args={[R + 0.55, 0.012, 8, 96]} />
-        <meshBasicMaterial color="#22d3ee" transparent opacity={0.5} />
+        <meshBasicMaterial color="#60a5fa" transparent opacity={0.5} />
       </mesh>
 
       <points ref={streamRef}>
@@ -402,7 +356,7 @@ export function NeuralDna({
           />
         </bufferGeometry>
         <pointsMaterial
-          color="#7dd3fc"
+          color="#93c5fd"
           size={0.06}
           transparent
           opacity={0.9}
@@ -414,9 +368,9 @@ export function NeuralDna({
       <sprite position={[0, 0, -3]} scale={18}>
         <spriteMaterial
           map={HALO_TEXTURE}
-          color="#0e7490"
+          color="#1d4ed8"
           transparent
-          opacity={0.16}
+          opacity={0.15}
           blending={THREE.AdditiveBlending}
           depthWrite={false}
         />
@@ -424,7 +378,7 @@ export function NeuralDna({
       <sprite position={[1.5, -2, -4]} scale={12}>
         <spriteMaterial
           map={HALO_TEXTURE}
-          color="#6d28d9"
+          color="#64748b"
           transparent
           opacity={0.12}
           blending={THREE.AdditiveBlending}

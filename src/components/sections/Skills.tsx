@@ -9,7 +9,7 @@ export function Skills({ lang }: { lang: Lang }) {
   const d = dict[lang];
   return (
     <section id="skills" className="mx-auto max-w-6xl px-6 py-32">
-      <SectionHeading>{d.sections.skills}</SectionHeading>
+      <SectionHeading seq={4} molecule={3}>{d.sections.skills}</SectionHeading>
       <div className="grid gap-8">
         {skillCategories.map((category, i) => (
           <div key={i}>

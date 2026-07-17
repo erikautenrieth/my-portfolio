@@ -10,7 +10,7 @@ export function About({ lang }: { lang: Lang }) {
   const d = dict[lang];
   return (
     <section id="about" className="mx-auto max-w-6xl px-6 py-32">
-      <SectionHeading>{d.sections.about}</SectionHeading>
+      <SectionHeading seq={1} molecule={0}>{d.sections.about}</SectionHeading>
       <p className="max-w-2xl text-lg leading-relaxed text-slate-300">{d.about.text}</p>
       <div className="mt-10 flex gap-4">
         <a href={GITHUB_URL} target="_blank" rel="noopener" className={linkClass}>

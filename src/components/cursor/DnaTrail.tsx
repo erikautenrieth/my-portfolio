@@ -17,16 +17,16 @@ interface Particle {
 
 const CYAN = "#22d3ee";
 const VIOLET = "#a78bfa";
-const MAX_LIFE = 1400;
-const MAX_PARTICLES = 12;
-const SPAWN_THROTTLE_MS = 90;
-const SPAWN_MIN_DELTA = 4;
+const MAX_LIFE = 850;
+const MAX_PARTICLES = 10;
+const SPAWN_THROTTLE_MS = 55;
+const SPAWN_MIN_DELTA = 2;
 
 function drawDnaFragment(ctx: CanvasRenderingContext2D, alpha: number): void {
-  const amp = 8;
-  const numPoints = 6;
-  const totalWidth = 40;
-  const xStart = -20;
+  const amp = 5;
+  const numPoints = 9;
+  const totalWidth = 24;
+  const xStart = -12;
 
   const pointsA: { x: number; y: number }[] = [];
   const pointsB: { x: number; y: number }[] = [];
@@ -38,23 +38,21 @@ function drawDnaFragment(ctx: CanvasRenderingContext2D, alpha: number): void {
     pointsB.push({ x: px, y: Math.sin(t + Math.PI) * amp });
   }
 
-  // Base-pair rungs (behind strands)
+  // Base-pair rungs
   ctx.save();
-  ctx.strokeStyle = "rgba(255,255,255,0.4)";
-  ctx.lineWidth = 0.8;
+  ctx.lineWidth = 0.6;
   ctx.shadowBlur = 0;
-
-  for (let r = 0; r < 5; r++) {
-    const idx = r * ((numPoints - 1) / 4);
+  for (let r = 0; r < 7; r++) {
+    const idx = r * ((numPoints - 1) / 6);
     const i = Math.floor(idx);
     const frac = idx - i;
     const nextI = Math.min(i + 1, numPoints - 1);
-
     const ax = pointsA[i].x + (pointsA[nextI].x - pointsA[i].x) * frac;
     const ay = pointsA[i].y + (pointsA[nextI].y - pointsA[i].y) * frac;
     const bx = pointsB[i].x + (pointsB[nextI].x - pointsB[i].x) * frac;
     const by = pointsB[i].y + (pointsB[nextI].y - pointsB[i].y) * frac;
-
+    // gradient-like color on rungs: alternate cyan/violet tint
+    ctx.strokeStyle = r % 2 === 0 ? "rgba(34,211,238,0.45)" : "rgba(167,139,250,0.45)";
     ctx.beginPath();
     ctx.moveTo(ax, ay);
     ctx.lineTo(bx, by);
@@ -62,11 +60,11 @@ function drawDnaFragment(ctx: CanvasRenderingContext2D, alpha: number): void {
   }
   ctx.restore();
 
-  // Strand A (cyan)
+  // Strand A — cyan (front strand, slightly brighter)
   ctx.save();
   ctx.strokeStyle = CYAN;
-  ctx.lineWidth = 1.5;
-  ctx.shadowBlur = 6;
+  ctx.lineWidth = 1.2;
+  ctx.shadowBlur = 8;
   ctx.shadowColor = CYAN;
   ctx.beginPath();
   ctx.moveTo(pointsA[0].x, pointsA[0].y);
@@ -79,12 +77,13 @@ function drawDnaFragment(ctx: CanvasRenderingContext2D, alpha: number): void {
   ctx.stroke();
   ctx.restore();
 
-  // Strand B (violet)
+  // Strand B — violet (back strand, slightly dimmer = depth cue)
   ctx.save();
   ctx.strokeStyle = VIOLET;
-  ctx.lineWidth = 1.5;
+  ctx.lineWidth = 1.0;
   ctx.shadowBlur = 6;
   ctx.shadowColor = VIOLET;
+  ctx.globalAlpha = alpha * 0.8;
   ctx.beginPath();
   ctx.moveTo(pointsB[0].x, pointsB[0].y);
   for (let i = 0; i < numPoints - 1; i++) {
@@ -96,28 +95,51 @@ function drawDnaFragment(ctx: CanvasRenderingContext2D, alpha: number): void {
   ctx.stroke();
   ctx.restore();
 
-  // Nucleotide nodes — strand A
+  // Nucleotide nodes — strand A with phosphate highlight
   ctx.save();
-  ctx.shadowBlur = 6;
   ctx.shadowColor = CYAN;
-  ctx.fillStyle = CYAN;
-  ctx.globalAlpha = alpha * 0.8;
   for (const pt of pointsA) {
+    // outer glow ring
+    ctx.shadowBlur = 7;
+    ctx.fillStyle = "rgba(34,211,238,0.25)";
     ctx.beginPath();
-    ctx.arc(pt.x, pt.y, 2, 0, Math.PI * 2);
+    ctx.arc(pt.x, pt.y, 3.2, 0, Math.PI * 2);
+    ctx.fill();
+    // core
+    ctx.shadowBlur = 5;
+    ctx.fillStyle = CYAN;
+    ctx.globalAlpha = alpha;
+    ctx.beginPath();
+    ctx.arc(pt.x, pt.y, 1.8, 0, Math.PI * 2);
+    ctx.fill();
+    // specular highlight
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = "rgba(255,255,255,0.6)";
+    ctx.beginPath();
+    ctx.arc(pt.x - 0.5, pt.y - 0.5, 0.6, 0, Math.PI * 2);
     ctx.fill();
   }
   ctx.restore();
 
   // Nucleotide nodes — strand B
   ctx.save();
-  ctx.shadowBlur = 6;
   ctx.shadowColor = VIOLET;
-  ctx.fillStyle = VIOLET;
-  ctx.globalAlpha = alpha * 0.8;
+  ctx.globalAlpha = alpha * 0.85;
   for (const pt of pointsB) {
+    ctx.shadowBlur = 7;
+    ctx.fillStyle = "rgba(167,139,250,0.22)";
     ctx.beginPath();
-    ctx.arc(pt.x, pt.y, 2, 0, Math.PI * 2);
+    ctx.arc(pt.x, pt.y, 3.2, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.shadowBlur = 5;
+    ctx.fillStyle = VIOLET;
+    ctx.beginPath();
+    ctx.arc(pt.x, pt.y, 1.8, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = "rgba(255,255,255,0.5)";
+    ctx.beginPath();
+    ctx.arc(pt.x - 0.5, pt.y - 0.5, 0.6, 0, Math.PI * 2);
     ctx.fill();
   }
   ctx.restore();
@@ -133,7 +155,6 @@ export function DnaTrail() {
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
 
     const ctx = canvas.getContext("2d");
@@ -143,7 +164,6 @@ export function DnaTrail() {
       const dpr = window.devicePixelRatio || 1;
       canvas!.width = window.innerWidth * dpr;
       canvas!.height = window.innerHeight * dpr;
-      // setTransform resets + scales — avoids accumulation on repeated resize
       ctx!.setTransform(dpr, 0, 0, dpr, 0, 0);
     }
     resize();
@@ -166,11 +186,12 @@ export function DnaTrail() {
         particlesRef.current.push({
           x: e.clientX,
           y: e.clientY,
-          vx: (Math.random() - 0.5) * 1.2,
-          vy: -0.6 - Math.random() * 0.8,
+          // very slow drift — stays close to cursor
+          vx: (Math.random() - 0.5) * 0.25,
+          vy: -0.1 - Math.random() * 0.2,
           rotation: Math.random() * Math.PI * 2,
-          rotationSpeed: (Math.random() - 0.5) * 0.04,
-          scale: 0.2,
+          rotationSpeed: (Math.random() - 0.5) * 0.025,
+          scale: 0.1,
           alpha: 1,
           life: MAX_LIFE,
           maxLife: MAX_LIFE,
@@ -201,12 +222,13 @@ export function DnaTrail() {
 
         p.x += p.vx;
         p.y += p.vy;
-        p.vy *= 0.99;
+        p.vy *= 0.995;
         p.rotation += p.rotationSpeed;
         p.alpha = p.life / p.maxLife;
 
         const elapsed = p.maxLife - p.life;
-        p.scale = elapsed < 150 ? 0.2 + (elapsed / 150) * 0.8 : 1;
+        // pop in fast (120ms), hold at 0.5 scale (feels small, close to cursor)
+        p.scale = elapsed < 120 ? 0.1 + (elapsed / 120) * 0.4 : 0.5;
 
         ctx!.save();
         ctx!.translate(p.x, p.y);

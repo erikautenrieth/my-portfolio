@@ -8,7 +8,7 @@ export function Publications({ lang }: { lang: Lang }) {
   const d = dict[lang];
   return (
     <section id="publications" className="mx-auto max-w-6xl px-6 py-32">
-      <SectionHeading>{d.sections.publications}</SectionHeading>
+      <SectionHeading seq={6} molecule={0}>{d.sections.publications}</SectionHeading>
       <div className="grid gap-6">
         {publications.map((publication) => (
           <GlassCard key={publication.doi} className="p-8">
