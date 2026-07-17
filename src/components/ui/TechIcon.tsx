@@ -47,7 +47,6 @@ type IconComponent = ComponentType<{ size?: number; color?: string }>;
 
 const icons: Record<string, IconComponent> = {
   anthropic: SiAnthropic,
-  apacheairflow: SiApacheairflow,
   apachekafka: SiApachekafka,
   argo: SiArgo,
   circleci: SiCircleci,
@@ -60,7 +59,6 @@ const icons: Record<string, IconComponent> = {
   grafana: SiGrafana,
   helm: SiHelm,
   huggingface: SiHuggingface,
-  kedro: SiKedro,
   kubernetes: SiKubernetes,
   langchain: SiLangchain,
   langgraph: SiLanggraph,
@@ -89,7 +87,6 @@ const icons: Record<string, IconComponent> = {
   typescript: SiTypescript,
   vite: SiVite,
   vitest: SiVitest,
-  yandexcloud: SiYandexcloud,
 };
 
 export function TechIcon({ slug, size = 16 }: { slug?: string; size?: number }) {
