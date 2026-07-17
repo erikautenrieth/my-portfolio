@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Neural DNA — Style Prototype</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;500;700&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
+<style>
+  html, body { margin: 0; height: 100%; background: #020617; overflow: hidden; }
+  canvas { display: block; }
+  .overlay {
+    position: fixed; inset: 0; display: flex; flex-direction: column;
+    justify-content: center; padding-left: 8vw; pointer-events: none;
+    color: #e2e8f0; font-family: 'Space Grotesk', sans-serif;
+    max-width: 46vw;
+  }
+  .kicker {
+    font-family: 'JetBrains Mono', monospace; font-size: 13px;
+    letter-spacing: .35em; color: #22d3ee; margin-bottom: 18px;
+  }
+  h1 {
+    font-size: clamp(40px, 7vw, 96px); font-weight: 700; line-height: 1.02; margin: 0;
+    background: linear-gradient(90deg, #e2e8f0 0%, #22d3ee 55%, #a78bfa 100%);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  .tag {
+    margin-top: 22px; font-family: 'JetBrains Mono', monospace;
+    font-size: 14px; color: #94a3b8; letter-spacing: .08em;
+  }
+  .tag b { color: #a78bfa; font-weight: 400; }
+  .hud {
+    position: fixed; font-family: 'JetBrains Mono', monospace; font-size: 11px;
+    letter-spacing: .25em; color: #475569; pointer-events: none;
+  }
+  .hud-bl { left: 8vw; bottom: 5vh; }
+  .hud-tr { right: 4vw; top: 5vh; }
+  .pulse-dot {
+    display: inline-block; width: 6px; height: 6px; border-radius: 50%;
+    background: #22d3ee; margin-right: 10px; vertical-align: 1px;
+    animation: blink 2s ease-in-out infinite;
+  }
+  @keyframes blink { 0%, 100% { opacity: .25 } 50% { opacity: 1 } }
+</style>
+</head>
+<body>
+<div class="overlay">
+  <div class="kicker">// INTELLIGENCE ENCODED</div>
+  <h1>Erik<br>Autenrieth</h1>
+  <div class="tag">AI Engineer <b>·</b> Data Scientist <b>·</b> Full Stack Developer</div>
+</div>
+<div class="hud hud-bl"><span class="pulse-dot"></span>SYS.NEURAL-DNA // ONLINE</div>
+<div class="hud hud-tr">50.7374° N · 7.0982° E — BONN</div>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+  }
+}
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+
+// ---------- Scene ----------
+const scene = new THREE.Scene();
+scene.background = new THREE.Color('#020617');
+scene.fog = new THREE.FogExp2('#020617', 0.035);
+
+const camera = new THREE.PerspectiveCamera(45, innerWidth / innerHeight, 0.1, 100);
+camera.position.set(0, 0, 13);
+
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setSize(innerWidth, innerHeight);
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+document.body.appendChild(renderer.domElement);
+
+const composer = new EffectComposer(renderer);
+composer.addPass(new RenderPass(scene, camera));
+composer.addPass(new UnrealBloomPass(new THREE.Vector2(innerWidth, innerHeight), 1.3, 0.75, 0.15));
+
+// ---------- Helix group (right of the text) ----------
+const group = new THREE.Group();
+group.position.x = 3.4;
+group.rotation.z = 0.35;
+scene.add(group);
+
+const TURNS = 2.4, HEIGHT = 16, N = 110, R = 2.1;
+const CYAN = new THREE.Color('#22d3ee');
+const VIOLET = new THREE.Color('#a78bfa');
+
+function helixPoint(t, phase) {
+  const angle = t * TURNS * Math.PI * 2 + phase;
+  return new THREE.Vector3(Math.cos(angle) * R, (t - 0.5) * HEIGHT, Math.sin(angle) * R);
+}
+
+// ---------- Strands (instanced spheres) ----------
+const sphereGeo = new THREE.SphereGeometry(0.06, 12, 12);
+function makeStrand(color, phase) {
+  const mat = new THREE.MeshBasicMaterial({ color: color.clone().multiplyScalar(0.8) });
+  const inst = new THREE.InstancedMesh(sphereGeo, mat, N);
+  const dummy = new THREE.Object3D();
+  for (let i = 0; i < N; i++) {
+    dummy.position.copy(helixPoint(i / (N - 1), phase));
+    dummy.scale.setScalar(0.75 + 0.5 * Math.random());
+    dummy.updateMatrix();
+    inst.setMatrixAt(i, dummy.matrix);
+  }
+  group.add(inst);
+}
+makeStrand(CYAN, 0);
+makeStrand(VIOLET, Math.PI);
+
+// ---------- Synapse rungs (thin lines + pulsing nodes) ----------
+const nodeGeo = new THREE.SphereGeometry(0.075, 12, 12);
+const rungs = [];
+for (let i = 4; i < N - 4; i += 7) {
+  const t = i / (N - 1);
+  const a = helixPoint(t, 0), b = helixPoint(t, Math.PI);
+  const lineMat = new THREE.LineBasicMaterial({ color: '#67e8f9', transparent: true, opacity: 0.25 });
+  const line = new THREE.Line(new THREE.BufferGeometry().setFromPoints([a, b]), lineMat);
+  group.add(line);
+  const node = new THREE.Mesh(nodeGeo, new THREE.MeshBasicMaterial({ color: '#e0f7ff' }));
+  node.position.lerpVectors(a, b, 0.5);
+  group.add(node);
+  rungs.push({ a, b, node, lineMat, seed: Math.random() * Math.PI * 2 });
+}
+
+// ---------- Travelling signal pulses along the strands (with fading trails) ----------
+const pulseGeo = new THREE.SphereGeometry(0.085, 12, 12);
+const travelers = [];
+for (let i = 0; i < 6; i++) {
+  const mesh = new THREE.Mesh(pulseGeo, new THREE.MeshBasicMaterial({ color: '#f0fdff' }));
+  group.add(mesh);
+  const trail = [];
+  for (let j = 0; j < 5; j++) {
+    const tm = new THREE.Mesh(pulseGeo, new THREE.MeshBasicMaterial({
+      color: '#a5f3fc', transparent: true, opacity: 0.4 - j * 0.07,
+    }));
+    tm.scale.setScalar(0.8 - j * 0.13);
+    group.add(tm);
+    trail.push(tm);
+  }
+  travelers.push({ mesh, trail, history: [], t: Math.random(), speed: 0.05 + Math.random() * 0.04, phase: i % 2 ? Math.PI : 0 });
+}
+
+// ---------- Synapse firing (bright pulse crossing a random rung) ----------
+const firings = [];
+function maybeFire() {
+  if (firings.length < 2 && Math.random() < 0.015) {
+    const r = rungs[Math.floor(Math.random() * rungs.length)];
+    const mesh = new THREE.Mesh(pulseGeo, new THREE.MeshBasicMaterial({ color: '#ffffff' }));
+    group.add(mesh);
+    firings.push({ r, mesh, t: 0 });
+  }
+}
+
+// ---------- AI core data stream (particles flowing up the axis) ----------
+const STREAM_COUNT = 160;
+const streamPos = new Float32Array(STREAM_COUNT * 3);
+for (let i = 0; i < STREAM_COUNT; i++) {
+  const a = Math.random() * Math.PI * 2, rr = Math.random() * 0.22;
+  streamPos[i * 3] = Math.cos(a) * rr;
+  streamPos[i * 3 + 1] = (Math.random() - 0.5) * HEIGHT;
+  streamPos[i * 3 + 2] = Math.sin(a) * rr;
+}
+const streamGeo = new THREE.BufferGeometry();
+streamGeo.setAttribute('position', new THREE.BufferAttribute(streamPos, 3));
+const stream = new THREE.Points(streamGeo, new THREE.PointsMaterial({
+  color: '#7dd3fc', size: 0.06, transparent: true, opacity: 0.9,
+  blending: THREE.AdditiveBlending, depthWrite: false,
+}));
+group.add(stream);
+
+// ---------- Sparse starfield ----------
+const STAR_COUNT = 350;
+const starPos = new Float32Array(STAR_COUNT * 3);
+for (let i = 0; i < STAR_COUNT * 3; i++) starPos[i] = (Math.random() - 0.5) * 55;
+const starGeo = new THREE.BufferGeometry();
+starGeo.setAttribute('position', new THREE.BufferAttribute(starPos, 3));
+scene.add(new THREE.Points(starGeo, new THREE.PointsMaterial({
+  color: '#94a3b8', size: 0.045, transparent: true, opacity: 0.4, depthWrite: false,
+})));
+
+// ---------- Sci-fi scan ring sweeping up the helix ----------
+const scanRing = new THREE.Mesh(
+  new THREE.TorusGeometry(R + 0.55, 0.012, 8, 96),
+  new THREE.MeshBasicMaterial({ color: '#22d3ee', transparent: true, opacity: 0.5 })
+);
+scanRing.rotation.x = Math.PI / 2;
+group.add(scanRing);
+
+// ---------- Soft halo glows behind the helix (depth) ----------
+function makeHalo(color, scale, opacity) {
+  const c = document.createElement('canvas');
+  c.width = c.height = 256;
+  const ctx = c.getContext('2d');
+  const g = ctx.createRadialGradient(128, 128, 0, 128, 128, 128);
+  g.addColorStop(0, 'rgba(255,255,255,1)');
+  g.addColorStop(1, 'rgba(255,255,255,0)');
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, 256, 256);
+  const sprite = new THREE.Sprite(new THREE.SpriteMaterial({
+    map: new THREE.CanvasTexture(c), color, transparent: true, opacity,
+    blending: THREE.AdditiveBlending, depthWrite: false,
+  }));
+  sprite.scale.setScalar(scale);
+  return sprite;
+}
+const halo1 = makeHalo('#0e7490', 18, 0.16); halo1.position.set(0, 0, -3); group.add(halo1);
+const halo2 = makeHalo('#6d28d9', 12, 0.12); halo2.position.set(1.5, -2, -4); group.add(halo2);
+
+// ---------- Interaction ----------
+let mx = 0, my = 0;
+addEventListener('pointermove', (e) => {
+  mx = (e.clientX / innerWidth - 0.5) * 2;
+  my = (e.clientY / innerHeight - 0.5) * 2;
+});
+
+addEventListener('resize', () => {
+  camera.aspect = innerWidth / innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth, innerHeight);
+  composer.setSize(innerWidth, innerHeight);
+});
+
+// ---------- Animation loop ----------
+const clock = new THREE.Clock();
+function animate() {
+  requestAnimationFrame(animate);
+  const dt = Math.min(clock.getDelta(), 0.05);
+  const time = clock.elapsedTime;
+
+  group.rotation.y += dt * 0.14;
+  group.rotation.x = THREE.MathUtils.damp(group.rotation.x, my * 0.12, 2, dt);
+  group.rotation.z = THREE.MathUtils.damp(group.rotation.z, 0.35 + mx * 0.05, 2, dt);
+
+  // camera breathing – nothing ever stands still
+  camera.position.x = Math.sin(time * 0.15) * 0.35;
+  camera.position.y = Math.sin(time * 0.2) * 0.25;
+
+  // scan ring sweeping up, fading at the ends
+  const sweep = (time * 0.1) % 1;
+  scanRing.position.y = -HEIGHT / 2 + sweep * HEIGHT;
+  scanRing.material.opacity = 0.12 + 0.45 * Math.sin(Math.PI * sweep);
+
+  // pulsing synapse nodes + flash when the scan ring passes
+  for (const r of rungs) {
+    const flash = Math.max(0, 1 - Math.abs(r.node.position.y - scanRing.position.y) / 0.7);
+    const s = 1 + 0.45 * Math.sin(time * 2.2 + r.seed) + flash * 1.3;
+    r.node.scale.setScalar(s * 0.9);
+    r.lineMat.opacity = 0.18 + 0.1 * Math.sin(time * 2.2 + r.seed) + flash * 0.45;
+  }
+
+  // signals travelling along strands, dragging light trails
+  for (const tr of travelers) {
+    tr.t = (tr.t + tr.speed * dt) % 1;
+    tr.mesh.position.copy(helixPoint(tr.t, tr.phase));
+    tr.history.unshift(tr.mesh.position.clone());
+    if (tr.history.length > 16) tr.history.pop();
+    tr.trail.forEach((tm, j) => {
+      const h = tr.history[Math.min((j + 1) * 3, tr.history.length - 1)];
+      if (h) tm.position.copy(h);
+    });
+  }
+
+  // synapse firings
+  maybeFire();
+  for (let i = firings.length - 1; i >= 0; i--) {
+    const f = firings[i];
+    f.t += dt * 1.6;
+    if (f.t >= 1) {
+      group.remove(f.mesh);
+      f.mesh.material.dispose();
+      firings.splice(i, 1);
+    } else {
+      f.mesh.position.lerpVectors(f.r.a, f.r.b, f.t);
+    }
+  }
+
+  // data stream flowing upwards
+  const pos = streamGeo.attributes.position;
+  for (let i = 0; i < STREAM_COUNT; i++) {
+    let y = pos.getY(i) + dt * 2.2;
+    if (y > HEIGHT / 2) y = -HEIGHT / 2;
+    pos.setY(i, y);
+  }
+  pos.needsUpdate = true;
+
+  composer.render();
+}
+animate();
+</script>
+</body>
+</html>
