@@ -3,124 +3,190 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import { useFrame, useThree } from "@react-three/fiber";
-import { Html, Instance, Instances } from "@react-three/drei";
+import { Html } from "@react-three/drei";
 import type { MotionValue } from "motion/react";
 
 const TURNS = 3.2;
-const HEIGHT = 30;
-const N = 200;
+const HEIGHT = 38;
 const R = 2.1;
 const PHASE_OFFSET = 2.2;
-const RUNG_EVERY = 6;
 const TILT = -0.4;
 
-const BLUE = new THREE.Color("#22d3ee");
-const SILVER = new THREE.Color("#0e7490");
+const STRAND_COUNT = 1400;
+const RUNG_PARTICLE_COUNT = 12;
+const AMBIENT_COUNT = 1000;
 
-const PAIR_COLORS: [string, string][] = [
-  ["#22d3ee", "#0e7490"],
-  ["#06b6d4", "#0891b2"],
-];
-
-function helixPoint(t: number, phase: number, target = new THREE.Vector3()) {
+function helixPoint(t: number, phase: number): [number, number, number] {
   const angle = t * TURNS * Math.PI * 2 + phase;
-  return target.set(Math.cos(angle) * R, (t - 0.5) * HEIGHT, Math.sin(angle) * R);
+  return [Math.cos(angle) * R, (t - 0.5) * HEIGHT, Math.sin(angle) * R];
 }
 
-function buildStrandPoints(phase: number) {
-  return Array.from({ length: N }, (_, i) => ({
-    position: helixPoint(i / (N - 1), phase).toArray() as [number, number, number],
-    scale: 1.0,
-  }));
-}
+function buildParticleData() {
+  const helixPositions: number[] = [];
+  const cloudPositions: number[] = [];
+  const sizes: number[] = [];
+  const colorMix: number[] = [];
 
-const STRAND_POINTS: Record<"a" | "b", ReturnType<typeof buildStrandPoints>> = {
-  a: buildStrandPoints(0),
-  b: buildStrandPoints(PHASE_OFFSET),
-};
+  // Strand A particles
+  for (let i = 0; i < STRAND_COUNT; i++) {
+    const t = i / (STRAND_COUNT - 1);
+    const [x, y, z] = helixPoint(t, 0);
+    helixPositions.push(x, y, z);
+    const theta = Math.random() * Math.PI * 2;
+    const phi = Math.acos(2 * Math.random() - 1);
+    const r = 3 + Math.random() * 8;
+    cloudPositions.push(
+      Math.sin(phi) * Math.cos(theta) * r,
+      (Math.random() - 0.5) * HEIGHT * 1.2,
+      Math.sin(phi) * Math.sin(theta) * r,
+    );
+    sizes.push(0.8 + Math.random() * 0.6);
+    colorMix.push(0.0);
+  }
 
-function Strand({ color, strand }: { color: THREE.Color; strand: "a" | "b" }) {
-  const points = STRAND_POINTS[strand];
-  return (
-    <Instances limit={N}>
-      <sphereGeometry args={[0.055, 8, 6]} />
-      <meshBasicMaterial color={color} />
-      {points.map((p, i) => (
-        <Instance key={i} position={p.position} scale={p.scale} />
-      ))}
-    </Instances>
-  );
-}
+  // Strand B particles
+  for (let i = 0; i < STRAND_COUNT; i++) {
+    const t = i / (STRAND_COUNT - 1);
+    const [x, y, z] = helixPoint(t, PHASE_OFFSET);
+    helixPositions.push(x, y, z);
+    const theta = Math.random() * Math.PI * 2;
+    const phi = Math.acos(2 * Math.random() - 1);
+    const r = 3 + Math.random() * 8;
+    cloudPositions.push(
+      Math.sin(phi) * Math.cos(theta) * r,
+      (Math.random() - 0.5) * HEIGHT * 1.2,
+      Math.sin(phi) * Math.sin(theta) * r,
+    );
+    sizes.push(0.8 + Math.random() * 0.6);
+    colorMix.push(1.0);
+  }
 
-function StrandTube({ color, phase, opacity }: { color: THREE.Color; phase: number; opacity: number }) {
-  const geometry = useMemo(() => {
-    const points = Array.from({ length: 90 }, (_, i) => helixPoint(i / 89, phase));
-    const curve = new THREE.CatmullRomCurve3(points);
-    return new THREE.TubeGeometry(curve, 220, 0.1, 12, false);
-  }, [phase]);
-  return (
-    <mesh geometry={geometry}>
-      <meshBasicMaterial color={color} transparent opacity={opacity} depthWrite={false} />
-    </mesh>
-  );
-}
-
-interface Rung {
-  a: THREE.Vector3;
-  b: THREE.Vector3;
-  mid: THREE.Vector3;
-  midA: THREE.Vector3;
-  midB: THREE.Vector3;
-  halfLength: number;
-  seed: number;
-  quaternion: THREE.Quaternion;
-  colors: [string, string];
-}
-
-const UP = new THREE.Vector3(0, 1, 0);
-
-function buildRungs(): Rung[] {
-  const rungs: Rung[] = [];
-  let pairIndex = 0;
-  for (let i = 4; i < N - 4; i += RUNG_EVERY) {
-    const t = i / (N - 1);
+  // Rung particles (connecting strands)
+  for (let ri = 0; ri < 33; ri++) {
+    const t = (ri + 1) / 34;
     const a = helixPoint(t, 0);
     const b = helixPoint(t, PHASE_OFFSET);
-    const direction = b.clone().sub(a);
-    const mid = a.clone().lerp(b, 0.5);
-    rungs.push({
-      a,
-      b,
-      mid,
-      midA: a.clone().lerp(mid, 0.5),
-      midB: b.clone().lerp(mid, 0.5),
-      halfLength: direction.length() * 0.46,
-      seed: Math.random() * Math.PI * 2,
-      quaternion: new THREE.Quaternion().setFromUnitVectors(
-        UP,
-        direction.clone().normalize(),
-      ),
-      colors: PAIR_COLORS[pairIndex++ % PAIR_COLORS.length],
-    });
+    for (let j = 0; j < RUNG_PARTICLE_COUNT; j++) {
+      const lerp = j / (RUNG_PARTICLE_COUNT - 1);
+      helixPositions.push(
+        a[0] + (b[0] - a[0]) * lerp,
+        a[1] + (b[1] - a[1]) * lerp,
+        a[2] + (b[2] - a[2]) * lerp,
+      );
+      const theta = Math.random() * Math.PI * 2;
+      const phi = Math.acos(2 * Math.random() - 1);
+      const r = 3 + Math.random() * 7;
+      cloudPositions.push(
+        Math.sin(phi) * Math.cos(theta) * r,
+        (Math.random() - 0.5) * HEIGHT * 1.2,
+        Math.sin(phi) * Math.sin(theta) * r,
+      );
+      sizes.push(0.5 + Math.random() * 0.4);
+      colorMix.push(lerp);
+    }
   }
-  return rungs;
+
+  // Ambient cloud particles
+  for (let i = 0; i < AMBIENT_COUNT; i++) {
+    const theta = Math.random() * Math.PI * 2;
+    const r = 3 + Math.random() * 6;
+    const y = (Math.random() - 0.5) * HEIGHT;
+    const px = Math.cos(theta) * r;
+    const pz = Math.sin(theta) * r;
+    helixPositions.push(px * 0.7, y, pz * 0.7);
+    cloudPositions.push(px, y, pz);
+    sizes.push(0.2 + Math.random() * 0.3);
+    colorMix.push(0.5);
+  }
+
+  return {
+    helixPositions: new Float32Array(helixPositions),
+    cloudPositions: new Float32Array(cloudPositions),
+    sizes: new Float32Array(sizes),
+    colorMix: new Float32Array(colorMix),
+    count: helixPositions.length / 3,
+  };
 }
 
-const RUNGS = buildRungs();
+const PARTICLES = buildParticleData();
 
-const TARGET_YS = [0.5, -1.5, -3.5, -5.5, -7.5, -9.5, -11.5];
-const TARGET_RUNGS = TARGET_YS.map((y) => {
-  let best = 0;
-  let bestDistance = Infinity;
-  RUNGS.forEach((rung, i) => {
-    const distance = Math.abs(rung.mid.y - y);
-    if (distance < bestDistance) {
-      bestDistance = distance;
-      best = i;
+const TARGET_YS = [1.0, -1.5, -4.0, -6.5, -9.0, -11.5, -14.0];
+
+function computeTargetPositions() {
+  return TARGET_YS.map((targetY) => {
+    let bestT = 0;
+    let bestDist = Infinity;
+    for (let ri = 0; ri < 33; ri++) {
+      const t = (ri + 1) / 34;
+      const y = (t - 0.5) * HEIGHT;
+      const dist = Math.abs(y - targetY);
+      if (dist < bestDist) {
+        bestDist = dist;
+        bestT = t;
+      }
     }
+    const a = helixPoint(bestT, 0);
+    const b = helixPoint(bestT, PHASE_OFFSET);
+    return [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2, (a[2] + b[2]) / 2] as [number, number, number];
   });
-  return best;
-});
+}
+
+const TARGET_POSITIONS = computeTargetPositions();
+
+const vertexShader = /* glsl */ `
+  attribute vec3 aHelixPosition;
+  attribute vec3 aCloudPosition;
+  attribute float aSize;
+  attribute float aColorMix;
+
+  uniform float uProgress;
+  uniform float uTime;
+
+  varying float vColorMix;
+  varying float vAlpha;
+
+  void main() {
+    vec3 pos = mix(aCloudPosition, aHelixPosition, uProgress);
+
+    // Subtle drift when not fully formed
+    float drift = (1.0 - uProgress) * 0.5;
+    pos.x += sin(uTime * 0.4 + aCloudPosition.y * 0.1) * drift;
+    pos.z += cos(uTime * 0.3 + aCloudPosition.x * 0.1) * drift;
+
+    // Subtle breathing when formed
+    float breath = uProgress * sin(uTime * 1.2 + aHelixPosition.y * 0.25) * 0.08;
+    pos.x += breath * (aHelixPosition.x / ${R.toFixed(1)});
+    pos.z += breath * (aHelixPosition.z / ${R.toFixed(1)});
+
+    vec4 mvPosition = modelViewMatrix * vec4(pos, 1.0);
+    gl_Position = projectionMatrix * mvPosition;
+    gl_PointSize = aSize * (180.0 / -mvPosition.z);
+
+    vColorMix = aColorMix;
+    vAlpha = smoothstep(0.0, 0.15, uProgress) * (0.7 + 0.3 * uProgress);
+  }
+`;
+
+const fragmentShader = /* glsl */ `
+  uniform vec3 uColorA;
+  uniform vec3 uColorB;
+
+  varying float vColorMix;
+  varying float vAlpha;
+
+  void main() {
+    float dist = length(gl_PointCoord - vec2(0.5));
+    if (dist > 0.5) discard;
+
+    float strength = 1.0 - dist * 2.0;
+    strength = pow(strength, 2.0);
+
+    vec3 color = mix(uColorA, uColorB, vColorMix);
+    color *= 1.6;
+
+    gl_FragColor = vec4(color, strength * vAlpha);
+  }
+`;
 
 const SECTION_IDS = [
   "hero",
@@ -141,9 +207,10 @@ export function NeuralDna({
   scroll: MotionValue<number>;
 }) {
   const group = useRef<THREE.Group>(null!);
-  const nodeRefs = useRef<(THREE.Mesh | null)[]>([]);
-  const rungMaterialRefs = useRef<(THREE.MeshBasicMaterial | null)[]>([]);
+  const materialRef = useRef<THREE.ShaderMaterial>(null!);
   const [active, setActive] = useState(-1);
+  const { size } = useThree();
+  const lookTarget = useMemo(() => new THREE.Vector3(0, 0, 0), []);
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -162,10 +229,15 @@ export function NeuralDna({
     return () => observer.disconnect();
   }, []);
 
-  const rungs = RUNGS;
-
-  const { size } = useThree();
-  const lookTarget = useMemo(() => new THREE.Vector3(0, 0, 0), []);
+  const uniforms = useMemo(
+    () => ({
+      uProgress: { value: 0 },
+      uTime: { value: 0 },
+      uColorA: { value: new THREE.Color("#22d3ee") },
+      uColorB: { value: new THREE.Color("#0e7490") },
+    }),
+    [],
+  );
 
   useFrame((state, rawDelta) => {
     const dt = Math.min(rawDelta, 0.05);
@@ -173,6 +245,19 @@ export function NeuralDna({
     const g = group.current;
     const progress = reduced ? 0 : scroll.get();
 
+    // Update shader uniforms
+    if (materialRef.current) {
+      const morphTarget = reduced ? 1 : Math.min(progress / 0.15, 1.0);
+      materialRef.current.uniforms.uProgress.value = THREE.MathUtils.damp(
+        materialRef.current.uniforms.uProgress.value,
+        morphTarget,
+        3.0,
+        dt,
+      );
+      materialRef.current.uniforms.uTime.value = time;
+    }
+
+    // Camera and group positioning logic
     const targetX = size.width < 768 ? 1.4 : 3.1;
     g.position.x = targetX;
 
@@ -181,9 +266,9 @@ export function NeuralDna({
     g.rotation.z = THREE.MathUtils.damp(g.rotation.z, TILT + state.pointer.x * 0.05, 2, dt);
 
     const viewShift = size.width < 768 ? 0.7 : 2.5;
-    const yLocal = THREE.MathUtils.lerp(2.0, -13.0, progress);
+    const yLocal = THREE.MathUtils.lerp(0.0, -16.0, progress);
     const axisX = g.position.x - Math.sin(TILT) * yLocal;
-    const axisY = Math.cos(TILT) * yLocal - 2;
+    const axisY = Math.cos(TILT) * yLocal - 4;
     const breatheX = reduced ? 0 : Math.sin(time * 0.15) * 0.35;
     const breatheY = reduced ? 0 : Math.sin(time * 0.2) * 0.25;
     state.camera.position.x = THREE.MathUtils.damp(
@@ -206,87 +291,48 @@ export function NeuralDna({
     );
     lookTarget.set(axisX - viewShift, axisY, 0);
     state.camera.lookAt(lookTarget);
-
-    // The "one thing": a phase-shifted wave traveling upward through the nodes
-    rungs.forEach((rung, i) => {
-      const node = nodeRefs.current[i];
-      if (!node) return;
-
-      // traveling wave: moves up the helix, creating "data flowing" impression
-      const wave = Math.sin(time * 1.8 - rung.mid.y * 0.22 + rung.seed * 0.3);
-
-      // nodes closer to camera's current Y glow brighter (viewport proximity)
-      const distFromView = Math.abs(rung.mid.y - yLocal);
-      const proximity = Math.max(0, 1 - distFromView / 5);
-
-      // combined pulse: base + wave + proximity boost
-      const pulse = reduced ? 1 : 1 + (0.08 + 0.18 * proximity) * wave;
-      node.scale.setScalar(pulse * 0.85);
-
-      // rung material opacity follows the same wave
-      for (const half of [0, 1]) {
-        const rungMaterial = rungMaterialRefs.current[i * 2 + half];
-        if (rungMaterial)
-          rungMaterial.opacity = 0.55 + (0.15 + 0.1 * proximity) * wave;
-      }
-    });
   });
 
   return (
-    <group ref={group} position={[2.5, -2, 0]} rotation={[0, 0, TILT]}>
-      <Strand color={BLUE} strand="a" />
-      <Strand color={SILVER} strand="b" />
-      <StrandTube color={BLUE} phase={0} opacity={0.5} />
-      <StrandTube color={SILVER} phase={PHASE_OFFSET} opacity={0.28} />
+    <group ref={group} position={[2.5, -4, 0]} rotation={[0, 0, TILT]}>
+      <points>
+        <bufferGeometry>
+          <bufferAttribute
+            attach="attributes-position"
+            args={[PARTICLES.helixPositions, 3]}
+          />
+          <bufferAttribute
+            attach="attributes-aHelixPosition"
+            args={[PARTICLES.helixPositions, 3]}
+          />
+          <bufferAttribute
+            attach="attributes-aCloudPosition"
+            args={[PARTICLES.cloudPositions, 3]}
+          />
+          <bufferAttribute
+            attach="attributes-aSize"
+            args={[PARTICLES.sizes, 1]}
+          />
+          <bufferAttribute
+            attach="attributes-aColorMix"
+            args={[PARTICLES.colorMix, 1]}
+          />
+        </bufferGeometry>
+        <shaderMaterial
+          ref={materialRef}
+          vertexShader={vertexShader}
+          fragmentShader={fragmentShader}
+          uniforms={uniforms}
+          transparent
+          blending={THREE.AdditiveBlending}
+          depthWrite={false}
+        />
+      </points>
 
-      {rungs.map((rung, i) => (
-        <group key={i}>
-          <mesh
-            position={rung.midA}
-            quaternion={rung.quaternion}
-            scale={[1, rung.halfLength, 1]}
-          >
-            <cylinderGeometry args={[0.055, 0.055, 1, 8]} />
-            <meshBasicMaterial
-              ref={(el: THREE.MeshBasicMaterial | null) => {
-                rungMaterialRefs.current[i * 2] = el;
-              }}
-              color={rung.colors[0]}
-              transparent
-              opacity={0.7}
-            />
-          </mesh>
-          <mesh
-            position={rung.midB}
-            quaternion={rung.quaternion}
-            scale={[1, rung.halfLength, 1]}
-          >
-            <cylinderGeometry args={[0.055, 0.055, 1, 8]} />
-            <meshBasicMaterial
-              ref={(el: THREE.MeshBasicMaterial | null) => {
-                rungMaterialRefs.current[i * 2 + 1] = el;
-              }}
-              color={rung.colors[1]}
-              transparent
-              opacity={0.7}
-            />
-          </mesh>
-          <mesh
-            ref={(el: THREE.Mesh | null) => {
-              nodeRefs.current[i] = el;
-            }}
-            position={rung.mid}
-          >
-            <sphereGeometry args={[0.055, 8, 6]} />
-            <meshBasicMaterial color="#67e8f9" transparent opacity={0.85} />
-          </mesh>
-        </group>
-      ))}
-
-      {TARGET_RUNGS.map((rungIndex, i) => (
+      {TARGET_POSITIONS.map((pos, i) => (
         <Html
           key={i}
-          position={RUNGS[rungIndex].mid}
+          position={pos}
           center
           zIndexRange={[10, 0]}
           style={{ pointerEvents: "none" }}
