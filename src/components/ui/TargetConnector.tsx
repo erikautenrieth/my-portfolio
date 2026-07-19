@@ -2,9 +2,7 @@
 
 import { useEffect, useRef } from "react";
 
-// Sci-fi callout: dot after the heading → horizontal run in the free
-// corridor above the content card → 45° chamfer → vertical drop with an
-// arrowhead precisely into the target lock. A light pulse travels the path.
+// Smooth flowing arc from heading to target lock.
 // Updated per frame via direct DOM writes (the DNA rotates continuously).
 export function TargetConnector() {
   const pathRef = useRef<SVGPathElement>(null);
@@ -59,58 +57,32 @@ export function TargetConnector() {
       const y1 = a.top + a.height / 2;
       const lockCenterX = b.left + b.width / 2;
       const lockCenterY = b.top + b.height / 2;
-      const dy = lockCenterY - y1;
 
-      // free corridor: right edge of the section's content column
-      const section = anchor.closest("section");
-      let corridor = x1 + 40;
-      if (section) {
-        const s = section.getBoundingClientRect();
-        const paddingRight =
-          parseFloat(getComputedStyle(section).paddingRight) || 0;
-        corridor = s.right - paddingRight + 24;
-      }
-
-      // one bend: prefer a 45° diagonal, but never enter the content column
       const lockRadius = Math.max(b.width, b.height) / 2 + 6;
-      let bendX = Math.max(lockCenterX - Math.abs(dy), corridor);
-      // keep enough runway so the diagonal never folds back on itself
-      bendX = Math.min(bendX, lockCenterX - lockRadius - 14);
+      const dx = lockCenterX - x1;
+      const dy = lockCenterY - y1;
+      const dist = Math.hypot(dx, dy) || 1;
 
-      let ex: number;
-      let ey: number;
-      let angle: number;
-
-      const segLength = Math.hypot(lockCenterX - bendX, dy);
-      if (bendX <= x1 + 16 || segLength < lockRadius + 10 || Math.abs(dy) < 14) {
-        // straight shot from the heading dot
-        const dirX = lockCenterX - x1;
-        const dirY = lockCenterY - y1;
-        const length = Math.hypot(dirX, dirY) || 1;
-        if (length < lockRadius + 12) {
-          svg.style.opacity = "0";
-          return;
-        }
-        ex = lockCenterX - (dirX / length) * lockRadius;
-        ey = lockCenterY - (dirY / length) * lockRadius;
-        angle = Math.atan2(dirY, dirX);
-        path.setAttribute("d", `M ${x1} ${y1} L ${ex} ${ey}`);
-      } else {
-        const dirX = lockCenterX - bendX;
-        const dirY = dy;
-        const length = Math.hypot(dirX, dirY) || 1;
-        ex = lockCenterX - (dirX / length) * lockRadius;
-        ey = lockCenterY - (dirY / length) * lockRadius;
-        angle = Math.atan2(dirY, dirX);
-        // softly rounded bend instead of a hard corner
-        const r = Math.min(12, bendX - x1);
-        const bx = bendX + (dirX / length) * r;
-        const by = y1 + (dirY / length) * r;
-        path.setAttribute(
-          "d",
-          `M ${x1} ${y1} H ${bendX - r} Q ${bendX} ${y1} ${bx} ${by} L ${ex} ${ey}`,
-        );
+      if (dist < lockRadius + 12) {
+        svg.style.opacity = "0";
+        return;
       }
+
+      const ex = lockCenterX - (dx / dist) * lockRadius;
+      const ey = lockCenterY - (dy / dist) * lockRadius;
+
+      const hPull = Math.min(Math.abs(dx) * 0.4, 180);
+      const vBow = Math.sign(dy || -1) * Math.min(Math.abs(dx) * 0.18, 60);
+      const cx1 = x1 + hPull;
+      const cy1 = y1 + vBow;
+      const cx2 = ex - hPull * 0.5;
+      const cy2 = ey - vBow * 0.4;
+      const angle = Math.atan2(ey - cy2, ex - cx2);
+
+      path.setAttribute(
+        "d",
+        `M ${x1} ${y1} C ${cx1} ${cy1} ${cx2} ${cy2} ${ex} ${ey}`,
+      );
 
       dot.setAttribute("cx", String(x1));
       dot.setAttribute("cy", String(y1));
@@ -119,8 +91,10 @@ export function TargetConnector() {
       // arrowhead snaps in and the pulse starts travelling
       const drawT = reduced
         ? 1
-        : Math.min(1, (performance.now() - drawStartRef.current) / 550);
-      const eased = 1 - Math.pow(1 - drawT, 3);
+        : Math.min(1, (performance.now() - drawStartRef.current) / 700);
+      const eased = drawT < 0.5
+        ? 4 * drawT * drawT * drawT
+        : 1 - Math.pow(-2 * drawT + 2, 3) / 2;
       const totalLength = path.getTotalLength();
       path.setAttribute("stroke-dasharray", String(totalLength));
       path.setAttribute("stroke-dashoffset", String(totalLength * (1 - eased)));
@@ -156,32 +130,35 @@ export function TargetConnector() {
     <svg
       ref={svgRef}
       aria-hidden
-      className="pointer-events-none fixed inset-0 z-40 h-full w-full opacity-0 transition-opacity duration-500"
+      className="pointer-events-none fixed inset-0 z-0 h-full w-full opacity-0 transition-opacity duration-500"
     >
       <path
         ref={pathRef}
         fill="none"
         stroke="var(--color-sky-300)"
-        strokeWidth="1.5"
-        strokeOpacity="0.85"
-        className="[filter:drop-shadow(0_0_4px_rgba(125,211,252,0.7))]"
+        strokeWidth="1"
+        strokeOpacity="0.45"
+        className="[filter:drop-shadow(0_0_3px_rgba(125,211,252,0.4))]"
       />
       <circle
         ref={dotRef}
-        r="3.5"
+        r="3"
         fill="var(--color-sky-300)"
-        className="[filter:drop-shadow(0_0_6px_rgba(125,211,252,0.9))]"
+        fillOpacity="0.6"
+        className="[filter:drop-shadow(0_0_4px_rgba(125,211,252,0.5))]"
       />
       <polygon
         ref={arrowRef}
         fill="var(--color-sky-300)"
-        className="transition-opacity duration-200 [filter:drop-shadow(0_0_5px_rgba(125,211,252,0.9))]"
+        fillOpacity="0.6"
+        className="transition-opacity duration-200 [filter:drop-shadow(0_0_3px_rgba(125,211,252,0.5))]"
       />
       <circle
         ref={pulseRef}
-        r="2.5"
+        r="2"
         fill="#ffffff"
-        className="[filter:drop-shadow(0_0_7px_rgba(186,230,253,1))]"
+        fillOpacity="0.7"
+        className="[filter:drop-shadow(0_0_5px_rgba(186,230,253,0.7))]"
       />
     </svg>
   );

@@ -121,3 +121,14 @@ body {
     animation: none;
   }
 }
+
+@keyframes scanDown {
+  from { top: 0; }
+  to { top: 100%; }
+}
+@keyframes fadeInOut {
+  0% { opacity: 0; }
+  6% { opacity: 0.6; }
+  78% { opacity: 0.6; }
+  100% { opacity: 0; }
+}
