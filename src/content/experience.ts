@@ -35,20 +35,20 @@ export const experience: ExperienceEntry[] = [
         },
         bullets: [
           {
-            de: "Architektur und Entwicklung eines LangGraph-basierten AI-Agenten mit Tool-Calling, Middleware-Stack und persistenter Zustandsverwaltung",
-            en: "Architected and built a LangGraph-based AI agent with tool calling, middleware stack and persistent state management",
+            de: "LangGraph-Agenten mit Tool-Calling, Middleware-Stack und persistenter Zustandsverwaltung entworfen und gebaut: das zentrale Laufzeitsystem für automatisierte Zertifizierungsabläufe",
+            en: "Architected a LangGraph agent with tool calling, a middleware stack, and persistent state as the core runtime for automated certification workflows",
           },
           {
-            de: "Hybrid-Search-RAG-System mit pgvector; Datenpipelines mit Hamilton für XML-Parsing, LLM-Summarisierung und Embedding-Generierung",
-            en: "Hybrid search RAG system with pgvector; data pipelines with Hamilton for XML parsing, LLM summarisation and embedding generation",
+            de: "Hybrid-Search-RAG auf pgvector gebaut; Hamilton-Pipelines für XML-Ingest, LLM-Summarisierung und Embedding-Generierung",
+            en: "Built a hybrid-search RAG system on pgvector with Hamilton pipelines covering XML ingestion, LLM summarisation, and embedding generation",
           },
           {
-            de: "Observability-Stack mit Langfuse (LLM-Tracing, Token- und Kosten-Monitoring) plus Evaluationssystem für automatisierte Regressionstests",
-            en: "Observability stack with Langfuse (LLM tracing, token and cost monitoring) plus an evaluation system for automated regression testing",
+            de: "Langfuse-Observability eingerichtet (End-to-End-LLM-Tracing, Token- und Kostenmonitoring) und automatisierten Evaluations-Harness für Agenten-Regressionstests gebaut",
+            en: "Wired up Langfuse for end-to-end LLM tracing and cost monitoring, then built an automated evaluation harness for regression testing agent outputs",
           },
           {
-            de: "Produktives Deployment auf AWS-Kubernetes mit Helm, ArgoCD und Horizontal Pod Autoscaling",
-            en: "Production deployment on AWS Kubernetes with Helm, ArgoCD and horizontal pod autoscaling",
+            de: "System auf AWS-Kubernetes ausgerollt: Helm-Charts, ArgoCD-GitOps und HPA für Produktionslast konfiguriert",
+            en: "Shipped to AWS Kubernetes via Helm and ArgoCD, with HPA configured for production traffic",
           },
         ],
       },
@@ -63,16 +63,16 @@ export const experience: ExperienceEntry[] = [
         },
         bullets: [
           {
-            de: "ML-Klassifizierungsservice (Python, FastAPI, scikit-learn) zur automatischen Vorhersage von Sendungskategorien und -attributen",
-            en: "ML classification service (Python, FastAPI, scikit-learn) automatically predicting shipment categories and attributes",
+            de: "ML-Klassifizierungsservice mit FastAPI und scikit-learn gebaut, der Sendungskategorien und -attribute automatisch bei Eingang erkennt",
+            en: "Built a FastAPI/scikit-learn classification service that predicts shipment categories and attributes automatically at intake",
           },
           {
-            de: "React-Frontend mit Redux Toolkit, RTK Query und MUI inkl. Barcode-Scanning und mehrstufiger Sendungsrecherche",
-            en: "React frontend with Redux Toolkit, RTK Query and MUI including barcode scanning and multi-level shipment search",
+            de: "React-Frontend mit Redux Toolkit, RTK Query und MUI geliefert, inkl. Barcode-Scanning und mehrstufiger Sendungsrecherche",
+            en: "Delivered a React/Redux Toolkit frontend with RTK Query, MUI, barcode scanning, and multi-level shipment search",
           },
           {
-            de: "Spring-Boot-Backend mit Liquibase-Migrationen und CI/CD über Azure Pipelines",
-            en: "Spring Boot backend with Liquibase migrations and CI/CD via Azure Pipelines",
+            de: "Spring-Boot-Backend mit Liquibase-Schema-Migrationen und vollständiger CI/CD-Pipeline über Azure Pipelines betreut",
+            en: "Maintained a Spring Boot backend with Liquibase schema migrations, wired into a full CI/CD flow on Azure Pipelines",
           },
         ],
       },
@@ -84,16 +84,16 @@ export const experience: ExperienceEntry[] = [
     company: "ZB MED, Bonn",
     bullets: [
       {
-        de: "Konzeption und Implementierung eines cloudbasierten MLOps-Systems für Text-Mining mit MLflow, Ray AI, AutoML, Docker und GitHub Actions",
-        en: "Designed and implemented a cloud-based MLOps system for text mining with MLflow, Ray AI, AutoML, Docker and GitHub Actions",
+        de: "Cloud-MLOps-Plattform für biomedizinisches Text-Mining entworfen und umgesetzt: MLflow, Ray AI, AutoML, Docker, GitHub Actions",
+        en: "Designed and built a cloud MLOps platform for biomedical text mining: MLflow, Ray AI, AutoML, Docker, and GitHub Actions",
       },
       {
-        de: "Automatisierte Strukturierung klinischer Daten mit LLMs auf HPC-Infrastruktur (Masterarbeit): Prompt Engineering, Few-Shot Learning, systematische Evaluierung",
-        en: "Automated structuring of clinical data with LLMs on HPC infrastructure (master's thesis): prompt engineering, few-shot learning, systematic evaluation",
+        de: "Masterarbeit (Note 1,5): LLM-Pipeline auf HPC gebaut, die klinischen Freitext automatisch strukturiert. Prompt Engineering und Few-Shot-Learning systematisch evaluiert",
+        en: "Master's thesis (grade 1.5): built an LLM pipeline on HPC to automatically structure clinical free-text using prompt engineering and few-shot techniques",
       },
       {
-        de: "Feature-Entwicklung mit React für den „Health Study Hub“, eine Plattform für medizinische Publikationen",
-        en: "Feature development with React for the “Health Study Hub”, a platform for medical publications",
+        de: "React-Features für den \"Health Study Hub\" entwickelt, eine Publikationsplattform für medizinische Forschende bei ZB MED",
+        en: "Shipped React features for the Health Study Hub, a publication discovery platform for medical researchers",
       },
     ],
   },
@@ -104,8 +104,8 @@ export const experience: ExperienceEntry[] = [
     compact: true,
     bullets: [
       {
-        de: "Automatisierte Python-Pipeline für Quantitative Susceptibility Mapping (QSM) — Grundlage der Frontiers-Publikation 2026",
-        en: "Automated Python pipeline for quantitative susceptibility mapping (QSM) — basis of the 2026 Frontiers publication",
+        de: "Automatisierte Python-Pipeline für Quantitative Susceptibility Mapping (QSM) gebaut, Grundlage der Frontiers-in-Psychiatry-Publikation 2026",
+        en: "Built the automated QSM pipeline in Python that produced the reproducible MRI analysis underlying the 2026 Frontiers in Psychiatry publication",
       },
     ],
   },
@@ -116,8 +116,8 @@ export const experience: ExperienceEntry[] = [
     compact: true,
     bullets: [
       {
-        de: "Erstellung und Betreuung von Assignments im Modul „Scientific Programming with Python“ (SciPy, scikit-learn, Pandas, NumPy)",
-        en: "Created and supervised assignments for “Scientific Programming with Python” (SciPy, scikit-learn, Pandas, NumPy)",
+        de: "Assignments im Modul \"Scientific Programming with Python\" konzipiert und betreut (SciPy, scikit-learn, Pandas, NumPy)",
+        en: "Designed and graded assignments for Scientific Programming with Python, covering SciPy, scikit-learn, Pandas, and NumPy",
       },
     ],
   },
@@ -128,8 +128,8 @@ export const experience: ExperienceEntry[] = [
     compact: true,
     bullets: [
       {
-        de: "Python-Pipelines zur MRT-Bildanalyse mit FSL, AFNI und MATLAB-Preprocessing",
-        en: "Python pipelines for MRI image analysis with FSL, AFNI and MATLAB preprocessing",
+        de: "Python-Pipelines zur MRT-Bildanalyse entwickelt, Preprocessing mit FSL, AFNI und MATLAB",
+        en: "Built Python pipelines for MRI image analysis using FSL, AFNI, and MATLAB preprocessing",
       },
     ],
   },

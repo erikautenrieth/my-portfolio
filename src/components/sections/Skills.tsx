@@ -8,19 +8,19 @@ import { TechIcon } from "@/components/ui/TechIcon";
 export function Skills({ lang }: { lang: Lang }) {
   const d = dict[lang];
   return (
-    <section id="skills" className="mx-auto max-w-6xl px-6 py-32 md:pr-[34%]">
+    <section id="skills" className="mx-auto max-w-6xl px-6 py-20 md:pr-[34%]">
       <SectionHeading seq={4} molecule={3}>{d.sections.skills}</SectionHeading>
-      <div className="grid gap-8">
+      <div className="grid gap-5">
         {skillCategories.map((category, i) => (
           <div key={i}>
-            <p className="mb-3 font-mono text-xs uppercase tracking-[0.25em] text-cyan-400">
+            <p className="mb-2 font-mono text-xs uppercase tracking-[0.25em] text-cyan-400">
               {category.label[lang]}
             </p>
             <Marquee reverse={i % 2 === 1}>
               {category.skills.map((skill) => (
                 <span
                   key={skill.name}
-                  className="flex shrink-0 items-center gap-2.5 rounded-full bg-white/5 px-4 py-2 font-mono text-sm text-slate-300 ring-1 ring-white/10 transition hover:text-white hover:ring-cyan-400/40 hover:shadow-lg hover:shadow-cyan-400/15"
+                  className="flex shrink-0 items-center gap-2.5 rounded-full bg-white/5 px-3 py-1.5 font-mono text-xs text-slate-300 ring-1 ring-white/10 transition hover:text-white hover:ring-cyan-400/40 hover:shadow-lg hover:shadow-cyan-400/15"
                 >
                   <TechIcon slug={skill.icon} />
                   {skill.name}

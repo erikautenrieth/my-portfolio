@@ -1,6 +1,6 @@
 export const en = {
   hero: {
-    kicker: "// INTELLIGENCE ENCODED",
+    kicker: "// SYSTEMS IN PRODUCTION",
     name: "Erik Autenrieth",
     titles: ["AI Engineer", "Data Scientist", "Full Stack Developer"],
     scroll: "scroll to explore",
@@ -15,7 +15,7 @@ export const en = {
     contact: "Contact",
   },
   about: {
-    text: "I build AI agents and LLM systems that run in production — from LangGraph architectures with RAG and evaluation pipelines to full observability. My background combines data science and MLOps with full-stack engineering, complemented by research experience structuring clinical data with LLMs.",
+    text: "I build production LLM systems: LangGraph agents with hybrid RAG, full observability, and Kubernetes deployments that actually run. Research background in clinical NLP; peer-reviewed publication in Frontiers in Psychiatry.",
   },
   projects: {
     problem: "Problem",
@@ -29,8 +29,8 @@ export const en = {
     more: "Further positions",
   },
   contact: {
-    heading: "Let's connect",
-    text: "Open for conversations about AI engineering, ML systems and interesting problems.",
+    heading: "Get in touch",
+    text: "Open to roles in AI engineering and ML systems. Let's talk.",
   },
   footer: "© 2026 Erik Autenrieth",
 };

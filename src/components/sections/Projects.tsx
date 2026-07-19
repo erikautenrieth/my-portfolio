@@ -33,7 +33,7 @@ export function Projects({ lang }: { lang: Lang }) {
                 {(
                   [
                     [d.projects.problem, project.problem, "text-cyan-400"],
-                    [d.projects.approach, project.approach, "text-violet-400"],
+                    [d.projects.approach, project.approach, "text-emerald-400"],
                     [d.projects.result, project.result, "text-emerald-400"],
                   ] as const
                 ).map(([label, text, color]) => (
@@ -82,7 +82,7 @@ export function Projects({ lang }: { lang: Lang }) {
                       href={project.links.paper}
                       target="_blank"
                       rel="noopener"
-                      className={`${linkClass} bg-violet-400/10 text-violet-300 ring-violet-400/40 hover:shadow-violet-400/25`}
+                      className={`${linkClass} bg-emerald-400/10 text-emerald-300 ring-emerald-400/40 hover:shadow-emerald-400/25`}
                     >
                       {d.projects.paper} ↗
                     </a>

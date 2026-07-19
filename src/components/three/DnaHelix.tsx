@@ -3,143 +3,307 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import { useFrame, useThree } from "@react-three/fiber";
-import { Html, Instance, Instances } from "@react-three/drei";
+import { Html } from "@react-three/drei";
 import type { MotionValue } from "motion/react";
 
-// Realistic B-DNA look: strands offset by ~126° creates the characteristic
-// major/minor grooves; ~10 base pairs per turn; deep-blue/silver palette.
 const TURNS = 3.2;
-const HEIGHT = 22;
-const N = 150;
+const HEIGHT = 38;
 const R = 2.1;
-const PHASE_OFFSET = 2.2; // ~126° — real DNA groove signature (not 180°)
-const RUNG_EVERY = 6; // ≈ 10 base pairs per helix turn
+const PHASE_OFFSET = 2.2;
 const TILT = -0.4;
-const TRAVELER_COUNT = 6;
-const TRAIL_LENGTH = 5;
-const STREAM_COUNT = 160;
 
-const BLUE = new THREE.Color("#3b82f6").multiplyScalar(0.85);
-const SILVER = new THREE.Color("#cbd5e1").multiplyScalar(0.75);
+const STRAND_COUNT = 1400;
+const RUNG_PARTICLE_COUNT = 12;
+const AMBIENT_COUNT = 1000;
 
-// Base-pair half colors (complementary pairs, two tone variants)
-const PAIR_COLORS: [string, string][] = [
-  ["#60a5fa", "#e2e8f0"],
-  ["#93c5fd", "#cbd5e1"],
-];
-
-function helixPoint(t: number, phase: number, target = new THREE.Vector3()) {
+function helixPoint(t: number, phase: number): [number, number, number] {
   const angle = t * TURNS * Math.PI * 2 + phase;
-  return target.set(Math.cos(angle) * R, (t - 0.5) * HEIGHT, Math.sin(angle) * R);
+  return [Math.cos(angle) * R, (t - 0.5) * HEIGHT, Math.sin(angle) * R];
 }
 
-// Static random geometry is generated once at module load (client-only file),
-// not during render — keeps render functions pure.
-function buildStrandPoints(phase: number) {
-  return Array.from({ length: N }, (_, i) => ({
-    position: helixPoint(i / (N - 1), phase).toArray() as [number, number, number],
-    // regular backbone units with slight organic variation
-    scale: 0.9 + 0.2 * Math.random(),
-  }));
-}
+function buildParticleData() {
+  const helixPositions: number[] = [];
+  const cloudPositions: number[] = [];
+  const sizes: number[] = [];
+  const colorMix: number[] = [];
+  const randoms: number[] = []; // per-particle seed for shimmer and stagger jitter
 
-const STRAND_POINTS: Record<"a" | "b", ReturnType<typeof buildStrandPoints>> = {
-  a: buildStrandPoints(0),
-  b: buildStrandPoints(PHASE_OFFSET),
-};
+  // Strand A particles
+  for (let i = 0; i < STRAND_COUNT; i++) {
+    const t = i / (STRAND_COUNT - 1);
+    const [x, y, z] = helixPoint(t, 0);
+    helixPositions.push(x, y, z);
+    const theta = Math.random() * Math.PI * 2;
+    const phi = Math.acos(2 * Math.random() - 1);
+    const r = 3 + Math.random() * 8;
+    cloudPositions.push(
+      Math.sin(phi) * Math.cos(theta) * r,
+      (Math.random() - 0.5) * HEIGHT * 1.2,
+      Math.sin(phi) * Math.sin(theta) * r,
+    );
+    sizes.push(0.8 + Math.random() * 0.6);
+    colorMix.push(0.0);
+    randoms.push(Math.random());
+  }
 
-function Strand({ color, strand }: { color: THREE.Color; strand: "a" | "b" }) {
-  const points = STRAND_POINTS[strand];
-  return (
-    <Instances limit={N}>
-      <sphereGeometry args={[0.045, 12, 12]} />
-      <meshBasicMaterial color={color} />
-      {points.map((p, i) => (
-        <Instance key={i} position={p.position} scale={p.scale} />
-      ))}
-    </Instances>
-  );
-}
+  // Strand B particles
+  for (let i = 0; i < STRAND_COUNT; i++) {
+    const t = i / (STRAND_COUNT - 1);
+    const [x, y, z] = helixPoint(t, PHASE_OFFSET);
+    helixPositions.push(x, y, z);
+    const theta = Math.random() * Math.PI * 2;
+    const phi = Math.acos(2 * Math.random() - 1);
+    const r = 3 + Math.random() * 8;
+    cloudPositions.push(
+      Math.sin(phi) * Math.cos(theta) * r,
+      (Math.random() - 0.5) * HEIGHT * 1.2,
+      Math.sin(phi) * Math.sin(theta) * r,
+    );
+    sizes.push(0.8 + Math.random() * 0.6);
+    colorMix.push(1.0);
+    randoms.push(Math.random());
+  }
 
-// Continuous holographic tube along each strand (soft core + wireframe ribs).
-function StrandTube({ color, phase }: { color: THREE.Color; phase: number }) {
-  const geometry = useMemo(() => {
-    const points = Array.from({ length: 90 }, (_, i) => helixPoint(i / 89, phase));
-    const curve = new THREE.CatmullRomCurve3(points);
-    return new THREE.TubeGeometry(curve, 220, 0.075, 12, false);
-  }, [phase]);
-  return (
-    <group>
-      <mesh geometry={geometry}>
-        <meshBasicMaterial color={color} transparent opacity={0.22} depthWrite={false} />
-      </mesh>
-      <mesh geometry={geometry}>
-        <meshBasicMaterial color={color} wireframe transparent opacity={0.1} depthWrite={false} />
-      </mesh>
-    </group>
-  );
-}
-
-interface Rung {
-  a: THREE.Vector3;
-  b: THREE.Vector3;
-  mid: THREE.Vector3;
-  midA: THREE.Vector3;
-  midB: THREE.Vector3;
-  halfLength: number;
-  seed: number;
-  quaternion: THREE.Quaternion;
-  colors: [string, string];
-}
-
-const UP = new THREE.Vector3(0, 1, 0);
-
-function buildRungs(): Rung[] {
-  const rungs: Rung[] = [];
-  let pairIndex = 0;
-  for (let i = 4; i < N - 4; i += RUNG_EVERY) {
-    const t = i / (N - 1);
+  // Rung particles (connecting strands)
+  for (let ri = 0; ri < 33; ri++) {
+    const t = (ri + 1) / 34;
     const a = helixPoint(t, 0);
     const b = helixPoint(t, PHASE_OFFSET);
-    const direction = b.clone().sub(a);
-    const mid = a.clone().lerp(b, 0.5);
-    rungs.push({
-      a,
-      b,
-      mid,
-      // two half-cylinders meeting at the center — like complementary bases
-      midA: a.clone().lerp(mid, 0.5),
-      midB: b.clone().lerp(mid, 0.5),
-      halfLength: direction.length() * 0.46,
-      seed: Math.random() * Math.PI * 2,
-      quaternion: new THREE.Quaternion().setFromUnitVectors(
-        UP,
-        direction.clone().normalize(),
-      ),
-      colors: PAIR_COLORS[pairIndex++ % PAIR_COLORS.length],
-    });
+    for (let j = 0; j < RUNG_PARTICLE_COUNT; j++) {
+      const lerp = j / (RUNG_PARTICLE_COUNT - 1);
+      helixPositions.push(
+        a[0] + (b[0] - a[0]) * lerp,
+        a[1] + (b[1] - a[1]) * lerp,
+        a[2] + (b[2] - a[2]) * lerp,
+      );
+      const theta = Math.random() * Math.PI * 2;
+      const phi = Math.acos(2 * Math.random() - 1);
+      const r = 3 + Math.random() * 7;
+      cloudPositions.push(
+        Math.sin(phi) * Math.cos(theta) * r,
+        (Math.random() - 0.5) * HEIGHT * 1.2,
+        Math.sin(phi) * Math.sin(theta) * r,
+      );
+      sizes.push(0.5 + Math.random() * 0.4);
+      colorMix.push(lerp);
+      randoms.push(Math.random());
+    }
   }
-  return rungs;
+
+  // Ambient cloud particles
+  for (let i = 0; i < AMBIENT_COUNT; i++) {
+    const theta = Math.random() * Math.PI * 2;
+    const r = 3 + Math.random() * 6;
+    const y = (Math.random() - 0.5) * HEIGHT;
+    const px = Math.cos(theta) * r;
+    const pz = Math.sin(theta) * r;
+    helixPositions.push(px * 0.7, y, pz * 0.7);
+    cloudPositions.push(px, y, pz);
+    sizes.push(0.2 + Math.random() * 0.3);
+    colorMix.push(0.5);
+    randoms.push(Math.random());
+  }
+
+  return {
+    helixPositions: new Float32Array(helixPositions),
+    cloudPositions: new Float32Array(cloudPositions),
+    sizes: new Float32Array(sizes),
+    colorMix: new Float32Array(colorMix),
+    randoms: new Float32Array(randoms),
+    count: helixPositions.length / 3,
+  };
 }
 
-const RUNGS = buildRungs();
+const PARTICLES = buildParticleData();
 
-// Movie-style target lock: each section aims at a real base pair of the
-// helix, chosen by height along the camera track (matched to the camera
-// lerp so the active target is always centered).
-const TARGET_YS = [0.8, -1.4, -3.6, -5.8, -8.0, -10.2, -12.4];
-const TARGET_RUNGS = TARGET_YS.map((y) => {
-  let best = 0;
-  let bestDistance = Infinity;
-  RUNGS.forEach((rung, i) => {
-    const distance = Math.abs(rung.mid.y - y);
-    if (distance < bestDistance) {
-      bestDistance = distance;
-      best = i;
+const TARGET_YS = [1.0, -1.5, -4.0, -6.5, -9.0, -11.5, -14.0];
+
+function computeTargetPositions() {
+  return TARGET_YS.map((targetY) => {
+    let bestT = 0;
+    let bestDist = Infinity;
+    for (let ri = 0; ri < 33; ri++) {
+      const t = (ri + 1) / 34;
+      const y = (t - 0.5) * HEIGHT;
+      const dist = Math.abs(y - targetY);
+      if (dist < bestDist) {
+        bestDist = dist;
+        bestT = t;
+      }
     }
+    const a = helixPoint(bestT, 0);
+    const b = helixPoint(bestT, PHASE_OFFSET);
+    return [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2, (a[2] + b[2]) / 2] as [number, number, number];
   });
-  return best;
-});
+}
+
+const TARGET_POSITIONS = computeTargetPositions();
+
+const vertexShader = /* glsl */ `
+  attribute vec3 aHelixPosition;
+  attribute vec3 aCloudPosition;
+  attribute float aSize;
+  attribute float aColorMix;
+  attribute float aRandom;    // per-particle seed [0,1] — shimmer phase + stagger jitter
+
+  uniform float uProgress;
+  uniform float uTime;
+
+  varying float vColorMix;
+  varying float vAlpha;
+  varying float vDepth;       // normalised camera-space Z for chromatic depth
+  varying float vPulse;       // data-packet brightness contribution
+  varying float vIsAmbient;   // 1.0 for ambient particles
+  varying float vEdgeFade;    // Y-edge softening
+  varying float vShimmer;     // per-particle flicker multiplier [0.88, 1.12]
+
+  void main() {
+    // ── Staggered morph via aRandom ───────────────────────────────────────
+    // Bottom of helix assembles first (tNorm=0), top last (tNorm=1).
+    // Each particle gets a small random jitter so they don't snap in unison.
+    float tNorm       = (aHelixPosition.y + ${(HEIGHT * 0.5).toFixed(1)}) / ${HEIGHT.toFixed(1)};
+    float staggerDelay = tNorm * 0.55 + aRandom * 0.12;
+    float localP       = clamp((uProgress - staggerDelay) / 0.33, 0.0, 1.0);
+    // Smooth ease-in-out per-particle
+    float p = localP * localP * (3.0 - 2.0 * localP);
+    float invP = 1.0 - p;
+
+    // ── Per-particle shimmer ──────────────────────────────────────────────
+    // aRandom drives an individual rate so particles flicker at different phases.
+    vShimmer = 0.88 + 0.24 * sin(uTime * (1.8 + aRandom * 4.2) + aRandom * 6.28318);
+
+    // ── Corkscrew assembly morph ──────────────────────────────────────────
+    // Spin particles inward on a tightening helix so they corkscrew into
+    // position rather than sliding straight in.
+
+    // Rotation angle decreases to 0 as progress reaches 1
+    float corkscrewAngle = invP * 3.14159265 * 2.5
+                         * (0.5 + 0.5 * sin(aCloudPosition.y * 0.18 + aColorMix * 1.57));
+    float ca = cos(corkscrewAngle);
+    float sa = sin(corkscrewAngle);
+
+    // Linear interpolation base
+    vec3 pos = mix(aCloudPosition, aHelixPosition, p);
+
+    // Apply rotation in XZ plane around the helix axis (world Y), fading out as p→1
+    float rx = pos.x * ca - pos.z * sa;
+    float rz = pos.x * sa + pos.z * ca;
+    pos.x = mix(rx, pos.x, p);
+    pos.z = mix(rz, pos.z, p);
+
+    // Subtle drift on cloud side
+    float drift = invP * 0.45;
+    pos.x += sin(uTime * 0.38 + aCloudPosition.y * 0.09) * drift;
+    pos.z += cos(uTime * 0.29 + aCloudPosition.x * 0.09) * drift;
+
+    // Subtle radial breathing on helix side
+    float breath = p * sin(uTime * 1.1 + aHelixPosition.y * 0.22) * 0.07;
+    pos.x += breath * (aHelixPosition.x / ${R.toFixed(1)});
+    pos.z += breath * (aHelixPosition.z / ${R.toFixed(1)});
+
+    // ── Ambient slow drift (size < ~0.36 are ambient) ────────────────────
+    float isAmbient = step(aSize, 0.36);
+    pos.x += isAmbient * sin(uTime * 0.11 + aCloudPosition.z * 0.3) * 0.18;
+    pos.y += isAmbient * sin(uTime * 0.08 + aCloudPosition.x * 0.25) * 0.10;
+    pos.z += isAmbient * cos(uTime * 0.13 + aCloudPosition.y * 0.22) * 0.14;
+    vIsAmbient = isAmbient;
+
+    // ── Data-packet pulse ─────────────────────────────────────────────────
+    // Two slightly different speeds per strand (aColorMix: 0=A, 1=B, mid=rung)
+    // Phase seed from helix Y position so pulse travels up the strand
+    float strandSpeed  = 0.9 + aColorMix * 0.35;     // strand B is ~38% faster
+    float pulsePhase   = aHelixPosition.y * 0.55 - uTime * strandSpeed * 2.8;
+    // Narrow bright packet: raised cosine window ~ 0.15 wide in phase space
+    float packet       = max(0.0, cos(pulsePhase) - 0.72) / 0.28;
+    packet             = pow(packet, 2.5);            // sharpen
+    vPulse             = packet * p;                  // only visible when helix is formed
+
+    // ── Edge fade (top/bottom Y softening) ───────────────────────────────
+    float normY  = aHelixPosition.y / (${(HEIGHT * 0.5).toFixed(1)});   // -1 … +1
+    vEdgeFade    = smoothstep(1.0, 0.65, abs(normY));                    // fade last 35%
+
+    // ── MVP + point size ──────────────────────────────────────────────────
+    vec4 mvPosition = modelViewMatrix * vec4(pos, 1.0);
+    gl_Position     = projectionMatrix * mvPosition;
+
+    // Size: ambient particles are small; pulse swells strand particles a touch
+    float sizeBoost = 1.0 + vPulse * 0.6;
+    gl_PointSize    = aSize * sizeBoost * (180.0 / -mvPosition.z);
+
+    // ── Varyings ──────────────────────────────────────────────────────────
+    vColorMix = aColorMix;
+
+    // Normalise depth: mvPosition.z is negative; map to 0 (close) … 1 (far)
+    vDepth = clamp(-mvPosition.z / 22.0, 0.0, 1.0);
+
+    // Base alpha: ambient is kept very dim; helix fades in with progress
+    float baseAlpha = mix(0.06, 0.75, 1.0 - isAmbient);
+    vAlpha = baseAlpha * smoothstep(0.0, 0.18, p) * (0.65 + 0.35 * p);
+  }
+`;
+
+const fragmentShader = /* glsl */ `
+  uniform vec3 uColorA;    // #22d3ee cyan-400
+  uniform vec3 uColorB;    // #34d399 emerald-400
+
+  varying float vColorMix;
+  varying float vAlpha;
+  varying float vDepth;
+  varying float vPulse;
+  varying float vIsAmbient;
+  varying float vEdgeFade;
+  varying float vShimmer;
+
+  void main() {
+    // ── Diamond / rhombus shape ───────────────────────────────────────────
+    // Rotate gl_PointCoord 45° then use Chebyshev (max-norm) distance
+    vec2 uv  = gl_PointCoord - vec2(0.5);
+    // 45° rotation matrix: [cos45 -sin45 / sin45 cos45] = [√½ -√½ / √½ √½]
+    const float INV_SQRT2 = 0.70710678;
+    vec2 rot = vec2(
+      uv.x * INV_SQRT2 - uv.y * INV_SQRT2,
+      uv.x * INV_SQRT2 + uv.y * INV_SQRT2
+    );
+    // Slight elongation along the "up" direction of the diamond (Y axis)
+    rot.y *= 0.72;
+
+    float diamond = max(abs(rot.x), abs(rot.y));
+    if (diamond > 0.5) discard;
+
+    // Soft falloff: sharp bright core, wide soft halo
+    float core  = 1.0 - smoothstep(0.0, 0.22, diamond);
+    float halo  = 1.0 - smoothstep(0.10, 0.50, diamond);
+    float shape = core * 0.8 + halo * 0.2;
+    shape = pow(shape, 1.6);
+
+    // ── Chromatic depth shift ─────────────────────────────────────────────
+    // Close particles → warm cyan-white; far → cooler desaturated blue
+    vec3 depthShift = vec3(-0.04, -0.06, 0.12);        // slight blue push at distance
+    vec3 baseColor  = mix(uColorA, uColorB, vColorMix);
+    baseColor       = baseColor + depthShift * vDepth;
+
+    // ── Data-packet: white-hot burst that rides on top ────────────────────
+    // Pulse drives color toward white and sharply boosts alpha
+    vec3 pulseColor = mix(baseColor, vec3(1.0), vPulse * 0.85);
+    float pulseAlphaBoost = vPulse * 1.4;
+
+    // ── Core halo tint: near-white at centre regardless of strand ─────────
+    // Gives the "fiber optic core glow" look
+    vec3 coreWhiten = mix(pulseColor, vec3(0.92, 0.98, 1.0), core * 0.35);
+
+    // ── Ambient: flat, barely-there colour ───────────────────────────────
+    // Override colour for ambient particles — muted, no pulse contribution
+    vec3 ambientColor = mix(uColorA, uColorB, 0.5) * 0.55;
+    vec3 finalColor   = mix(coreWhiten, ambientColor, vIsAmbient);
+
+    // ── Alpha assembly ────────────────────────────────────────────────────
+    float alpha = shape * vAlpha * vEdgeFade * vShimmer;
+    alpha      += shape * pulseAlphaBoost * (1.0 - vIsAmbient);
+    alpha       = clamp(alpha, 0.0, 1.0);
+
+    gl_FragColor = vec4(finalColor, alpha);
+  }
+`;
 
 const SECTION_IDS = [
   "hero",
@@ -152,42 +316,6 @@ const SECTION_IDS = [
   "contact",
 ];
 
-function makeHaloTexture() {
-  const canvas = document.createElement("canvas");
-  canvas.width = canvas.height = 256;
-  const ctx = canvas.getContext("2d")!;
-  const gradient = ctx.createRadialGradient(128, 128, 0, 128, 128, 128);
-  gradient.addColorStop(0, "rgba(255,255,255,1)");
-  gradient.addColorStop(1, "rgba(255,255,255,0)");
-  ctx.fillStyle = gradient;
-  ctx.fillRect(0, 0, 256, 256);
-  return new THREE.CanvasTexture(canvas);
-}
-
-// Client-only module (dynamic import, ssr: false) — guard keeps it robust.
-const HALO_TEXTURE = typeof document !== "undefined" ? makeHaloTexture() : null;
-
-const TRAVELERS = Array.from({ length: TRAVELER_COUNT }, (_, i) => ({
-  t: Math.random(),
-  speed: 0.05 + Math.random() * 0.04,
-  phase: i % 2 ? PHASE_OFFSET : 0,
-  history: [] as THREE.Vector3[],
-}));
-
-function buildStreamPositions() {
-  const positions = new Float32Array(STREAM_COUNT * 3);
-  for (let i = 0; i < STREAM_COUNT; i++) {
-    const angle = Math.random() * Math.PI * 2;
-    const radius = Math.random() * 0.22;
-    positions[i * 3] = Math.cos(angle) * radius;
-    positions[i * 3 + 1] = (Math.random() - 0.5) * HEIGHT;
-    positions[i * 3 + 2] = Math.sin(angle) * radius;
-  }
-  return positions;
-}
-
-const STREAM_POSITIONS = buildStreamPositions();
-
 export function NeuralDna({
   reduced,
   scroll,
@@ -196,16 +324,11 @@ export function NeuralDna({
   scroll: MotionValue<number>;
 }) {
   const group = useRef<THREE.Group>(null!);
-  const scanRing = useRef<THREE.Mesh>(null!);
-  const nodeRefs = useRef<(THREE.Mesh | null)[]>([]);
-  const rungMaterialRefs = useRef<(THREE.MeshBasicMaterial | null)[]>([]);
-  const travelerRefs = useRef<(THREE.Mesh | null)[]>([]);
-  const trailRefs = useRef<(THREE.Mesh | null)[]>([]);
-  const firingRefs = useRef<(THREE.Mesh | null)[]>([]);
-  const streamRef = useRef<THREE.Points>(null!);
+  const materialRef = useRef<THREE.ShaderMaterial>(null!);
   const [active, setActive] = useState(-1);
+  const { size } = useThree();
+  const lookTarget = useMemo(() => new THREE.Vector3(0, 0, 0), []);
 
-  // which section is in the viewport center → drives the target lock
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
@@ -223,16 +346,15 @@ export function NeuralDna({
     return () => observer.disconnect();
   }, []);
 
-  const rungs = RUNGS;
-  const travelers = TRAVELERS;
-
-  const firings = useRef([
-    { t: 1.1, rung: 0 },
-    { t: 1.1, rung: 0 },
-  ]);
-
-  const { size } = useThree();
-  const lookTarget = useMemo(() => new THREE.Vector3(0, 0, 0), []);
+  const uniforms = useMemo(
+    () => ({
+      uProgress: { value: 0 },
+      uTime: { value: 0 },
+      uColorA: { value: new THREE.Color("#22d3ee") }, // cyan-400 — strand A
+      uColorB: { value: new THREE.Color("#34d399") }, // emerald-400 — strand B
+    }),
+    [],
+  );
 
   useFrame((state, rawDelta) => {
     const dt = Math.min(rawDelta, 0.05);
@@ -240,26 +362,30 @@ export function NeuralDna({
     const g = group.current;
     const progress = reduced ? 0 : scroll.get();
 
-    // hero: helix front and center, large — sections: helix moves right,
-    // content column sits left
-    const heroFocus = progress < 0.07;
-    const targetX =
-      size.width < 768 ? (heroFocus ? 0.5 : 1.4) : heroFocus ? 0.9 : 3.1;
-    g.position.x = THREE.MathUtils.damp(g.position.x, targetX, 1.6, dt);
+    // Update shader uniforms
+    if (materialRef.current) {
+      const morphTarget = reduced ? 1 : Math.min(progress / 0.15, 1.0);
+      materialRef.current.uniforms.uProgress.value = THREE.MathUtils.damp(
+        materialRef.current.uniforms.uProgress.value,
+        morphTarget,
+        3.0,
+        dt,
+      );
+      materialRef.current.uniforms.uTime.value = time;
+    }
 
-    // calm rotation — slows right down inside sections so the target lock
-    // and callout stay steady — plus pointer parallax
-    if (!reduced) g.rotation.y += dt * (heroFocus ? 0.1 : 0.045);
+    // Camera and group positioning logic
+    const targetX = size.width < 768 ? 1.4 : 3.1;
+    g.position.x = targetX;
+
+    if (!reduced) g.rotation.y += dt * 0.045;
     g.rotation.x = THREE.MathUtils.damp(g.rotation.x, state.pointer.y * -0.1, 2, dt);
     g.rotation.z = THREE.MathUtils.damp(g.rotation.z, TILT + state.pointer.x * 0.05, 2, dt);
 
-    // scroll-driven camera: track the tilted helix axis from top to bottom.
-    // In sections the view pans left so the helix (and its target) sits in
-    // the right third of the screen, clear of the content column.
-    const viewShift = heroFocus ? 0 : size.width < 768 ? 0.7 : 2.5;
-    const yLocal = THREE.MathUtils.lerp(3.0, -12.4, progress);
-    const axisX = g.position.x - Math.sin(TILT) * yLocal;
-    const axisY = Math.cos(TILT) * yLocal;
+    const viewShift = size.width < 768 ? 0.7 : 2.5;
+    const yLocal = THREE.MathUtils.lerp(0.0, -12.0, progress);
+    const axisX = g.position.x - Math.sin(TILT) * yLocal * 0.3;
+    const axisY = Math.cos(TILT) * yLocal - 4;
     const breatheX = reduced ? 0 : Math.sin(time * 0.15) * 0.35;
     const breatheY = reduced ? 0 : Math.sin(time * 0.2) * 0.25;
     state.camera.position.x = THREE.MathUtils.damp(
@@ -276,138 +402,58 @@ export function NeuralDna({
     );
     state.camera.position.z = THREE.MathUtils.damp(
       state.camera.position.z,
-      heroFocus ? 11.0 : 12.2,
+      13.5,
       2.5,
       dt,
     );
     lookTarget.set(axisX - viewShift, axisY, 0);
     state.camera.lookAt(lookTarget);
-
-    // scan ring sweep
-    const sweep = reduced ? 0.5 : (time * 0.1) % 1;
-    scanRing.current.position.y = -HEIGHT / 2 + sweep * HEIGHT;
-    (scanRing.current.material as THREE.MeshBasicMaterial).opacity =
-      0.12 + 0.45 * Math.sin(Math.PI * sweep);
-
-    // base-pair nodes: pulse + flash when scan ring passes
-    rungs.forEach((rung, i) => {
-      const node = nodeRefs.current[i];
-      if (!node) return;
-      const flash = Math.max(0, 1 - Math.abs(rung.mid.y - scanRing.current.position.y) / 0.7);
-      const pulse = reduced ? 1 : 1 + 0.45 * Math.sin(time * 2.2 + rung.seed) + flash * 1.3;
-      node.scale.setScalar(pulse * 0.9);
-      for (const half of [0, 1]) {
-        const rungMaterial = rungMaterialRefs.current[i * 2 + half];
-        if (rungMaterial)
-          rungMaterial.opacity =
-            0.5 + 0.1 * Math.sin(time * 2.2 + rung.seed) + flash * 0.35;
-      }
-    });
-
-    // travelling signals with trails
-    if (!reduced) {
-      travelers.forEach((traveler, i) => {
-        traveler.t = (traveler.t + traveler.speed * dt) % 1;
-        const head = travelerRefs.current[i];
-        if (!head) return;
-        helixPoint(traveler.t, traveler.phase, head.position);
-        traveler.history.unshift(head.position.clone());
-        if (traveler.history.length > 16) traveler.history.pop();
-        for (let j = 0; j < TRAIL_LENGTH; j++) {
-          const trail = trailRefs.current[i * TRAIL_LENGTH + j];
-          const historyPoint =
-            traveler.history[Math.min((j + 1) * 3, traveler.history.length - 1)];
-          if (trail && historyPoint) trail.position.copy(historyPoint);
-        }
-      });
-
-      // synapse firings (pool of 2)
-      firings.current.forEach((firing, i) => {
-        const mesh = firingRefs.current[i];
-        if (!mesh) return;
-        if (firing.t > 1) {
-          mesh.visible = false;
-          if (Math.random() < 0.015) {
-            firing.t = 0;
-            firing.rung = Math.floor(Math.random() * rungs.length);
-          }
-          return;
-        }
-        firing.t += dt * 1.6;
-        mesh.visible = true;
-        const rung = rungs[firing.rung];
-        mesh.position.lerpVectors(rung.a, rung.b, Math.min(firing.t, 1));
-      });
-
-      // core data stream flowing upwards
-      const positionAttribute = streamRef.current.geometry.attributes
-        .position as THREE.BufferAttribute;
-      for (let i = 0; i < STREAM_COUNT; i++) {
-        let y = positionAttribute.getY(i) + dt * 2.2;
-        if (y > HEIGHT / 2) y = -HEIGHT / 2;
-        positionAttribute.setY(i, y);
-      }
-      positionAttribute.needsUpdate = true;
-    }
   });
 
   return (
-    <group ref={group} position={[0.9, 0, 0]} rotation={[0, 0, TILT]}>
-      <Strand color={BLUE} strand="a" />
-      <Strand color={SILVER} strand="b" />
-      <StrandTube color={BLUE} phase={0} />
-      <StrandTube color={SILVER} phase={PHASE_OFFSET} />
+    <group ref={group} position={[2.5, -4, 0]} rotation={[0, 0, TILT]}>
+      <points>
+        <bufferGeometry>
+          <bufferAttribute
+            attach="attributes-position"
+            args={[PARTICLES.helixPositions, 3]}
+          />
+          <bufferAttribute
+            attach="attributes-aHelixPosition"
+            args={[PARTICLES.helixPositions, 3]}
+          />
+          <bufferAttribute
+            attach="attributes-aCloudPosition"
+            args={[PARTICLES.cloudPositions, 3]}
+          />
+          <bufferAttribute
+            attach="attributes-aSize"
+            args={[PARTICLES.sizes, 1]}
+          />
+          <bufferAttribute
+            attach="attributes-aColorMix"
+            args={[PARTICLES.colorMix, 1]}
+          />
+          <bufferAttribute
+            attach="attributes-aRandom"
+            args={[PARTICLES.randoms, 1]}
+          />
+        </bufferGeometry>
+        <shaderMaterial
+          ref={materialRef}
+          vertexShader={vertexShader}
+          fragmentShader={fragmentShader}
+          uniforms={uniforms}
+          transparent
+          blending={THREE.AdditiveBlending}
+          depthWrite={false}
+        />
+      </points>
 
-      {rungs.map((rung, i) => (
-        <group key={i}>
-          {/* complementary base halves meeting at the hydrogen-bond center */}
-          <mesh
-            position={rung.midA}
-            quaternion={rung.quaternion}
-            scale={[1, rung.halfLength, 1]}
-          >
-            <cylinderGeometry args={[0.045, 0.045, 1, 8]} />
-            <meshBasicMaterial
-              ref={(el: THREE.MeshBasicMaterial | null) => {
-                rungMaterialRefs.current[i * 2] = el;
-              }}
-              color={rung.colors[0]}
-              transparent
-              opacity={0.55}
-            />
-          </mesh>
-          <mesh
-            position={rung.midB}
-            quaternion={rung.quaternion}
-            scale={[1, rung.halfLength, 1]}
-          >
-            <cylinderGeometry args={[0.045, 0.045, 1, 8]} />
-            <meshBasicMaterial
-              ref={(el: THREE.MeshBasicMaterial | null) => {
-                rungMaterialRefs.current[i * 2 + 1] = el;
-              }}
-              color={rung.colors[1]}
-              transparent
-              opacity={0.55}
-            />
-          </mesh>
-          <mesh
-            ref={(el: THREE.Mesh | null) => {
-              nodeRefs.current[i] = el;
-            }}
-            position={rung.mid}
-          >
-            <sphereGeometry args={[0.05, 12, 12]} />
-            <meshBasicMaterial color="#eaf4ff" />
-          </mesh>
-        </group>
-      ))}
-
-      {/* movie-style target lock snapping onto the focused base pair */}
-      {TARGET_RUNGS.map((rungIndex, i) => (
+      {TARGET_POSITIONS.map((pos, i) => (
         <Html
           key={i}
-          position={RUNGS[rungIndex].mid}
+          position={pos}
           center
           zIndexRange={[10, 0]}
           style={{ pointerEvents: "none" }}
@@ -427,88 +473,6 @@ export function NeuralDna({
           </div>
         </Html>
       ))}
-
-
-      {travelers.map((_, i) => (
-        <group key={i}>
-          <mesh
-            ref={(el: THREE.Mesh | null) => {
-              travelerRefs.current[i] = el;
-            }}
-          >
-            <sphereGeometry args={[0.085, 12, 12]} />
-            <meshBasicMaterial color="#f0fdff" />
-          </mesh>
-          {Array.from({ length: TRAIL_LENGTH }, (_, j) => (
-            <mesh
-              key={j}
-              ref={(el: THREE.Mesh | null) => {
-                trailRefs.current[i * TRAIL_LENGTH + j] = el;
-              }}
-              scale={0.8 - j * 0.13}
-            >
-              <sphereGeometry args={[0.085, 12, 12]} />
-              <meshBasicMaterial color="#93c5fd" transparent opacity={0.4 - j * 0.07} />
-            </mesh>
-          ))}
-        </group>
-      ))}
-
-      {[0, 1].map((i) => (
-        <mesh
-          key={i}
-          ref={(el: THREE.Mesh | null) => {
-            firingRefs.current[i] = el;
-          }}
-          visible={false}
-        >
-          <sphereGeometry args={[0.085, 12, 12]} />
-          <meshBasicMaterial color="#ffffff" />
-        </mesh>
-      ))}
-
-      <mesh ref={scanRing} rotation={[Math.PI / 2, 0, 0]}>
-        <torusGeometry args={[R + 0.55, 0.012, 8, 96]} />
-        <meshBasicMaterial color="#60a5fa" transparent opacity={0.5} />
-      </mesh>
-
-      <points ref={streamRef}>
-        <bufferGeometry>
-          <bufferAttribute
-            attach="attributes-position"
-            args={[STREAM_POSITIONS, 3]}
-          />
-        </bufferGeometry>
-        <pointsMaterial
-          color="#93c5fd"
-          size={0.06}
-          transparent
-          opacity={0.9}
-          blending={THREE.AdditiveBlending}
-          depthWrite={false}
-        />
-      </points>
-
-      <sprite position={[0, 0, -3]} scale={18}>
-        <spriteMaterial
-          map={HALO_TEXTURE}
-          color="#1d4ed8"
-          transparent
-          opacity={0.15}
-          blending={THREE.AdditiveBlending}
-          depthWrite={false}
-        />
-      </sprite>
-      <sprite position={[1.5, -2, -4]} scale={12}>
-        <spriteMaterial
-          map={HALO_TEXTURE}
-          color="#64748b"
-          transparent
-          opacity={0.12}
-          blending={THREE.AdditiveBlending}
-          depthWrite={false}
-        />
-      </sprite>
     </group>
   );
 }

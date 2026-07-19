@@ -24,11 +24,11 @@ export function Education({ lang }: { lang: Lang }) {
                 {entry.grade}
               </span>
             </div>
-            <div className="mt-6 border-l-2 border-violet-400/30 pl-4">
+            <div className="mt-6 border-l-2 border-emerald-400/30 pl-4">
               <p className="text-sm leading-relaxed text-slate-300">
-                „{t(lang, entry.thesis)}“
+                &bdquo;{t(lang, entry.thesis)}&ldquo;
               </p>
-              <p className="mt-1 font-mono text-xs text-violet-300">
+              <p className="mt-1 font-mono text-xs text-emerald-300">
                 {lang === "de" ? "Note" : "Grade"} {entry.thesisGrade}
               </p>
             </div>

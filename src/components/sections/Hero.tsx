@@ -34,7 +34,7 @@ export function Hero({ lang }: { lang: Lang }) {
           variants={item}
           className="font-display text-6xl font-bold leading-[1.02] md:text-8xl"
         >
-          <span className="bg-linear-to-r from-slate-200 via-cyan-400 to-violet-400 bg-clip-text text-transparent">
+          <span className="bg-linear-to-r from-slate-200 via-cyan-400 to-emerald-400 bg-clip-text text-transparent">
             {d.hero.name}
           </span>
         </motion.h1>
@@ -44,7 +44,7 @@ export function Hero({ lang }: { lang: Lang }) {
         >
           {d.hero.titles.map((title, i) => (
             <motion.span key={title} variants={item} className="flex items-center gap-3">
-              {i > 0 && <span className="text-violet-400">·</span>}
+              {i > 0 && <span className="text-emerald-400">·</span>}
               <span className={i === 0 ? "text-slate-200" : ""}>{title}</span>
             </motion.span>
           ))}

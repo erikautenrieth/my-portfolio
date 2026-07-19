@@ -2,7 +2,7 @@ import type { Dict } from "./en";
 
 export const de: Dict = {
   hero: {
-    kicker: "// INTELLIGENCE ENCODED",
+    kicker: "// SYSTEMS IN PRODUCTION",
     name: "Erik Autenrieth",
     titles: ["AI Engineer", "Data Scientist", "Full Stack Developer"],
     scroll: "scrollen zum Entdecken",
@@ -17,7 +17,7 @@ export const de: Dict = {
     contact: "Kontakt",
   },
   about: {
-    text: "Ich baue AI-Agenten und LLM-Systeme, die produktiv laufen — von LangGraph-Architekturen mit RAG und Evaluations-Pipelines bis zur vollständigen Observability. Mein Hintergrund verbindet Data Science und MLOps mit Full-Stack-Engineering, ergänzt durch Forschungserfahrung in der Strukturierung klinischer Daten mit LLMs.",
+    text: "Ich baue LLM-Systeme, die in Produktion laufen: LangGraph-Agenten mit Hybrid-RAG, vollständiger Observability und Kubernetes-Deployments. Forschungshintergrund in klinischer NLP; peer-reviewte Publikation in Frontiers in Psychiatry.",
   },
   projects: {
     problem: "Problem",
@@ -31,8 +31,8 @@ export const de: Dict = {
     more: "Weitere Stationen",
   },
   contact: {
-    heading: "Let's connect",
-    text: "Offen für Gespräche über AI Engineering, ML-Systeme und spannende Probleme.",
+    heading: "Kontakt aufnehmen",
+    text: "Schreib mir, ob Projekt, Stelle oder einfach ein gutes Gespräch über AI Engineering.",
   },
   footer: "© 2026 Erik Autenrieth",
 };

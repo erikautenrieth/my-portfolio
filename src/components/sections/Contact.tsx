@@ -22,7 +22,7 @@ export function Contact({ lang }: { lang: Lang }) {
           href={LINKEDIN_URL}
           target="_blank"
           rel="noopener"
-          className="rounded-xl bg-violet-400/10 px-8 py-4 font-display text-lg font-semibold text-violet-300 ring-1 ring-violet-400/40 transition hover:shadow-xl hover:shadow-violet-400/25 hover:ring-violet-400/70"
+          className="rounded-xl bg-emerald-400/10 px-8 py-4 font-display text-lg font-semibold text-emerald-300 ring-1 ring-emerald-400/40 transition hover:shadow-xl hover:shadow-emerald-400/25 hover:ring-emerald-400/70"
         >
           LinkedIn ↗
         </a>
