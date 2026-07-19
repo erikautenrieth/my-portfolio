@@ -28,7 +28,7 @@ export function Experience({ lang }: { lang: Lang }) {
         <div className="absolute left-2 top-0 h-full w-px bg-white/10 md:left-3" />
         <motion.div
           style={{ scaleY }}
-          className="absolute left-2 top-0 h-full w-px origin-top bg-linear-to-b from-cyan-400 to-violet-400 md:left-3"
+          className="absolute left-2 top-0 h-full w-px origin-top bg-linear-to-b from-cyan-400 to-emerald-400 md:left-3"
         />
 
         <div className="grid gap-10">
@@ -54,7 +54,7 @@ export function Experience({ lang }: { lang: Lang }) {
                   <ul className="mt-4 grid gap-2">
                     {entry.bullets.map((bullet, j) => (
                       <li key={j} className="flex gap-3 text-sm leading-relaxed text-slate-300">
-                        <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-violet-400" />
+                        <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-emerald-400" />
                         {t(lang, bullet)}
                       </li>
                     ))}
@@ -64,9 +64,9 @@ export function Experience({ lang }: { lang: Lang }) {
                 {entry.projects?.map((project, j) => (
                   <div
                     key={j}
-                    className="mt-6 border-l-2 border-violet-400/30 pl-5 first-of-type:mt-5"
+                    className="mt-6 border-l-2 border-emerald-400/30 pl-5 first-of-type:mt-5"
                   >
-                    <p className="font-mono text-xs uppercase tracking-[0.2em] text-violet-400">
+                    <p className="font-mono text-xs uppercase tracking-[0.2em] text-emerald-400">
                       {t(lang, project.client)}
                     </p>
                     <p className="mt-1 font-semibold text-slate-200">{t(lang, project.title)}</p>
@@ -76,7 +76,7 @@ export function Experience({ lang }: { lang: Lang }) {
                           key={k}
                           className="flex gap-3 text-sm leading-relaxed text-slate-300"
                         >
-                          <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-violet-400" />
+                          <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-emerald-400" />
                           {t(lang, bullet)}
                         </li>
                       ))}
@@ -95,7 +95,7 @@ export function Experience({ lang }: { lang: Lang }) {
             transition={{ duration: 0.6, ease: "easeOut" }}
             className="relative"
           >
-            <span className="absolute -left-8 top-8 h-2.5 w-2.5 rounded-full bg-violet-400 shadow-[0_0_12px_2px] shadow-violet-400/50 md:-left-[2.4rem]" />
+            <span className="absolute -left-8 top-8 h-2.5 w-2.5 rounded-full bg-emerald-400 shadow-[0_0_12px_2px] shadow-emerald-400/50 md:-left-[2.4rem]" />
             <GlassCard className="p-8">
               <p className="font-mono text-xs uppercase tracking-[0.25em] text-slate-400">
                 {d.experience.more}

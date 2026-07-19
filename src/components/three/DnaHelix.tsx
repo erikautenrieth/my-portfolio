@@ -26,6 +26,7 @@ function buildParticleData() {
   const cloudPositions: number[] = [];
   const sizes: number[] = [];
   const colorMix: number[] = [];
+  const randoms: number[] = []; // per-particle seed for shimmer and stagger jitter
 
   // Strand A particles
   for (let i = 0; i < STRAND_COUNT; i++) {
@@ -42,6 +43,7 @@ function buildParticleData() {
     );
     sizes.push(0.8 + Math.random() * 0.6);
     colorMix.push(0.0);
+    randoms.push(Math.random());
   }
 
   // Strand B particles
@@ -59,6 +61,7 @@ function buildParticleData() {
     );
     sizes.push(0.8 + Math.random() * 0.6);
     colorMix.push(1.0);
+    randoms.push(Math.random());
   }
 
   // Rung particles (connecting strands)
@@ -83,6 +86,7 @@ function buildParticleData() {
       );
       sizes.push(0.5 + Math.random() * 0.4);
       colorMix.push(lerp);
+      randoms.push(Math.random());
     }
   }
 
@@ -97,6 +101,7 @@ function buildParticleData() {
     cloudPositions.push(px, y, pz);
     sizes.push(0.2 + Math.random() * 0.3);
     colorMix.push(0.5);
+    randoms.push(Math.random());
   }
 
   return {
@@ -104,6 +109,7 @@ function buildParticleData() {
     cloudPositions: new Float32Array(cloudPositions),
     sizes: new Float32Array(sizes),
     colorMix: new Float32Array(colorMix),
+    randoms: new Float32Array(randoms),
     count: helixPositions.length / 3,
   };
 }
@@ -138,53 +144,164 @@ const vertexShader = /* glsl */ `
   attribute vec3 aCloudPosition;
   attribute float aSize;
   attribute float aColorMix;
+  attribute float aRandom;    // per-particle seed [0,1] — shimmer phase + stagger jitter
 
   uniform float uProgress;
   uniform float uTime;
 
   varying float vColorMix;
   varying float vAlpha;
+  varying float vDepth;       // normalised camera-space Z for chromatic depth
+  varying float vPulse;       // data-packet brightness contribution
+  varying float vIsAmbient;   // 1.0 for ambient particles
+  varying float vEdgeFade;    // Y-edge softening
+  varying float vShimmer;     // per-particle flicker multiplier [0.88, 1.12]
 
   void main() {
-    vec3 pos = mix(aCloudPosition, aHelixPosition, uProgress);
+    // ── Staggered morph via aRandom ───────────────────────────────────────
+    // Bottom of helix assembles first (tNorm=0), top last (tNorm=1).
+    // Each particle gets a small random jitter so they don't snap in unison.
+    float tNorm       = (aHelixPosition.y + ${(HEIGHT * 0.5).toFixed(1)}) / ${HEIGHT.toFixed(1)};
+    float staggerDelay = tNorm * 0.55 + aRandom * 0.12;
+    float localP       = clamp((uProgress - staggerDelay) / 0.33, 0.0, 1.0);
+    // Smooth ease-in-out per-particle
+    float p = localP * localP * (3.0 - 2.0 * localP);
+    float invP = 1.0 - p;
 
-    // Subtle drift when not fully formed
-    float drift = (1.0 - uProgress) * 0.5;
-    pos.x += sin(uTime * 0.4 + aCloudPosition.y * 0.1) * drift;
-    pos.z += cos(uTime * 0.3 + aCloudPosition.x * 0.1) * drift;
+    // ── Per-particle shimmer ──────────────────────────────────────────────
+    // aRandom drives an individual rate so particles flicker at different phases.
+    vShimmer = 0.88 + 0.24 * sin(uTime * (1.8 + aRandom * 4.2) + aRandom * 6.28318);
 
-    // Subtle breathing when formed
-    float breath = uProgress * sin(uTime * 1.2 + aHelixPosition.y * 0.25) * 0.08;
+    // ── Corkscrew assembly morph ──────────────────────────────────────────
+    // Spin particles inward on a tightening helix so they corkscrew into
+    // position rather than sliding straight in.
+
+    // Rotation angle decreases to 0 as progress reaches 1
+    float corkscrewAngle = invP * 3.14159265 * 2.5
+                         * (0.5 + 0.5 * sin(aCloudPosition.y * 0.18 + aColorMix * 1.57));
+    float ca = cos(corkscrewAngle);
+    float sa = sin(corkscrewAngle);
+
+    // Linear interpolation base
+    vec3 pos = mix(aCloudPosition, aHelixPosition, p);
+
+    // Apply rotation in XZ plane around the helix axis (world Y), fading out as p→1
+    float rx = pos.x * ca - pos.z * sa;
+    float rz = pos.x * sa + pos.z * ca;
+    pos.x = mix(rx, pos.x, p);
+    pos.z = mix(rz, pos.z, p);
+
+    // Subtle drift on cloud side
+    float drift = invP * 0.45;
+    pos.x += sin(uTime * 0.38 + aCloudPosition.y * 0.09) * drift;
+    pos.z += cos(uTime * 0.29 + aCloudPosition.x * 0.09) * drift;
+
+    // Subtle radial breathing on helix side
+    float breath = p * sin(uTime * 1.1 + aHelixPosition.y * 0.22) * 0.07;
     pos.x += breath * (aHelixPosition.x / ${R.toFixed(1)});
     pos.z += breath * (aHelixPosition.z / ${R.toFixed(1)});
 
-    vec4 mvPosition = modelViewMatrix * vec4(pos, 1.0);
-    gl_Position = projectionMatrix * mvPosition;
-    gl_PointSize = aSize * (180.0 / -mvPosition.z);
+    // ── Ambient slow drift (size < ~0.36 are ambient) ────────────────────
+    float isAmbient = step(aSize, 0.36);
+    pos.x += isAmbient * sin(uTime * 0.11 + aCloudPosition.z * 0.3) * 0.18;
+    pos.y += isAmbient * sin(uTime * 0.08 + aCloudPosition.x * 0.25) * 0.10;
+    pos.z += isAmbient * cos(uTime * 0.13 + aCloudPosition.y * 0.22) * 0.14;
+    vIsAmbient = isAmbient;
 
+    // ── Data-packet pulse ─────────────────────────────────────────────────
+    // Two slightly different speeds per strand (aColorMix: 0=A, 1=B, mid=rung)
+    // Phase seed from helix Y position so pulse travels up the strand
+    float strandSpeed  = 0.9 + aColorMix * 0.35;     // strand B is ~38% faster
+    float pulsePhase   = aHelixPosition.y * 0.55 - uTime * strandSpeed * 2.8;
+    // Narrow bright packet: raised cosine window ~ 0.15 wide in phase space
+    float packet       = max(0.0, cos(pulsePhase) - 0.72) / 0.28;
+    packet             = pow(packet, 2.5);            // sharpen
+    vPulse             = packet * p;                  // only visible when helix is formed
+
+    // ── Edge fade (top/bottom Y softening) ───────────────────────────────
+    float normY  = aHelixPosition.y / (${(HEIGHT * 0.5).toFixed(1)});   // -1 … +1
+    vEdgeFade    = smoothstep(1.0, 0.65, abs(normY));                    // fade last 35%
+
+    // ── MVP + point size ──────────────────────────────────────────────────
+    vec4 mvPosition = modelViewMatrix * vec4(pos, 1.0);
+    gl_Position     = projectionMatrix * mvPosition;
+
+    // Size: ambient particles are small; pulse swells strand particles a touch
+    float sizeBoost = 1.0 + vPulse * 0.6;
+    gl_PointSize    = aSize * sizeBoost * (180.0 / -mvPosition.z);
+
+    // ── Varyings ──────────────────────────────────────────────────────────
     vColorMix = aColorMix;
-    vAlpha = smoothstep(0.0, 0.15, uProgress) * (0.7 + 0.3 * uProgress);
+
+    // Normalise depth: mvPosition.z is negative; map to 0 (close) … 1 (far)
+    vDepth = clamp(-mvPosition.z / 22.0, 0.0, 1.0);
+
+    // Base alpha: ambient is kept very dim; helix fades in with progress
+    float baseAlpha = mix(0.06, 0.75, 1.0 - isAmbient);
+    vAlpha = baseAlpha * smoothstep(0.0, 0.18, p) * (0.65 + 0.35 * p);
   }
 `;
 
 const fragmentShader = /* glsl */ `
-  uniform vec3 uColorA;
-  uniform vec3 uColorB;
+  uniform vec3 uColorA;    // #22d3ee cyan-400
+  uniform vec3 uColorB;    // #34d399 emerald-400
 
   varying float vColorMix;
   varying float vAlpha;
+  varying float vDepth;
+  varying float vPulse;
+  varying float vIsAmbient;
+  varying float vEdgeFade;
+  varying float vShimmer;
 
   void main() {
-    float dist = length(gl_PointCoord - vec2(0.5));
-    if (dist > 0.5) discard;
+    // ── Diamond / rhombus shape ───────────────────────────────────────────
+    // Rotate gl_PointCoord 45° then use Chebyshev (max-norm) distance
+    vec2 uv  = gl_PointCoord - vec2(0.5);
+    // 45° rotation matrix: [cos45 -sin45 / sin45 cos45] = [√½ -√½ / √½ √½]
+    const float INV_SQRT2 = 0.70710678;
+    vec2 rot = vec2(
+      uv.x * INV_SQRT2 - uv.y * INV_SQRT2,
+      uv.x * INV_SQRT2 + uv.y * INV_SQRT2
+    );
+    // Slight elongation along the "up" direction of the diamond (Y axis)
+    rot.y *= 0.72;
 
-    float strength = 1.0 - dist * 2.0;
-    strength = pow(strength, 2.0);
+    float diamond = max(abs(rot.x), abs(rot.y));
+    if (diamond > 0.5) discard;
 
-    vec3 color = mix(uColorA, uColorB, vColorMix);
-    color *= 1.6;
+    // Soft falloff: sharp bright core, wide soft halo
+    float core  = 1.0 - smoothstep(0.0, 0.22, diamond);
+    float halo  = 1.0 - smoothstep(0.10, 0.50, diamond);
+    float shape = core * 0.8 + halo * 0.2;
+    shape = pow(shape, 1.6);
 
-    gl_FragColor = vec4(color, strength * vAlpha);
+    // ── Chromatic depth shift ─────────────────────────────────────────────
+    // Close particles → warm cyan-white; far → cooler desaturated blue
+    vec3 depthShift = vec3(-0.04, -0.06, 0.12);        // slight blue push at distance
+    vec3 baseColor  = mix(uColorA, uColorB, vColorMix);
+    baseColor       = baseColor + depthShift * vDepth;
+
+    // ── Data-packet: white-hot burst that rides on top ────────────────────
+    // Pulse drives color toward white and sharply boosts alpha
+    vec3 pulseColor = mix(baseColor, vec3(1.0), vPulse * 0.85);
+    float pulseAlphaBoost = vPulse * 1.4;
+
+    // ── Core halo tint: near-white at centre regardless of strand ─────────
+    // Gives the "fiber optic core glow" look
+    vec3 coreWhiten = mix(pulseColor, vec3(0.92, 0.98, 1.0), core * 0.35);
+
+    // ── Ambient: flat, barely-there colour ───────────────────────────────
+    // Override colour for ambient particles — muted, no pulse contribution
+    vec3 ambientColor = mix(uColorA, uColorB, 0.5) * 0.55;
+    vec3 finalColor   = mix(coreWhiten, ambientColor, vIsAmbient);
+
+    // ── Alpha assembly ────────────────────────────────────────────────────
+    float alpha = shape * vAlpha * vEdgeFade * vShimmer;
+    alpha      += shape * pulseAlphaBoost * (1.0 - vIsAmbient);
+    alpha       = clamp(alpha, 0.0, 1.0);
+
+    gl_FragColor = vec4(finalColor, alpha);
   }
 `;
 
@@ -233,8 +350,8 @@ export function NeuralDna({
     () => ({
       uProgress: { value: 0 },
       uTime: { value: 0 },
-      uColorA: { value: new THREE.Color("#22d3ee") },
-      uColorB: { value: new THREE.Color("#0e7490") },
+      uColorA: { value: new THREE.Color("#22d3ee") }, // cyan-400 — strand A
+      uColorB: { value: new THREE.Color("#34d399") }, // emerald-400 — strand B
     }),
     [],
   );
@@ -266,8 +383,8 @@ export function NeuralDna({
     g.rotation.z = THREE.MathUtils.damp(g.rotation.z, TILT + state.pointer.x * 0.05, 2, dt);
 
     const viewShift = size.width < 768 ? 0.7 : 2.5;
-    const yLocal = THREE.MathUtils.lerp(0.0, -16.0, progress);
-    const axisX = g.position.x - Math.sin(TILT) * yLocal;
+    const yLocal = THREE.MathUtils.lerp(0.0, -12.0, progress);
+    const axisX = g.position.x - Math.sin(TILT) * yLocal * 0.3;
     const axisY = Math.cos(TILT) * yLocal - 4;
     const breatheX = reduced ? 0 : Math.sin(time * 0.15) * 0.35;
     const breatheY = reduced ? 0 : Math.sin(time * 0.2) * 0.25;
@@ -316,6 +433,10 @@ export function NeuralDna({
           <bufferAttribute
             attach="attributes-aColorMix"
             args={[PARTICLES.colorMix, 1]}
+          />
+          <bufferAttribute
+            attach="attributes-aRandom"
+            args={[PARTICLES.randoms, 1]}
           />
         </bufferGeometry>
         <shaderMaterial

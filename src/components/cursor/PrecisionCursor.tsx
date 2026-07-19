@@ -193,9 +193,9 @@ export function PrecisionCursor() {
               ctx!.shadowColor = "#22d3ee";
               ctx!.globalAlpha = colAlpha * 0.9;
             } else {
-              const r = Math.round(34 + t * (139 - 34));
-              const g = Math.round(211 + t * (92 - 211));
-              const b = Math.round(238 + t * (246 - 238));
+              const r = Math.round(34 + t * (52 - 34));
+              const g = Math.round(211 + t * (211 - 211));
+              const b = Math.round(238 + t * (153 - 238));
               ctx!.fillStyle = `rgb(${r},${g},${b})`;
               ctx!.shadowBlur = 0;
               ctx!.globalAlpha = colAlpha * Math.max(0.15, 1 - t * 0.9);
@@ -287,26 +287,26 @@ export function PrecisionCursor() {
           <path
             d="M 40 22 A 18 18 0 0 1 22 40"
             fill="none"
-            stroke="#a78bfa"
+            stroke="#34d399"
             strokeWidth="1"
             strokeOpacity="0.55"
             strokeLinecap="round"
-            className="[filter:drop-shadow(0_0_3px_rgba(167,139,250,0.7))]"
+            className="[filter:drop-shadow(0_0_3px_rgba(52,211,153,0.7))]"
           />
           <path
             d="M 4 22 A 18 18 0 0 1 22 4"
             fill="none"
-            stroke="#a78bfa"
+            stroke="#34d399"
             strokeWidth="1"
             strokeOpacity="0.55"
             strokeLinecap="round"
-            className="[filter:drop-shadow(0_0_3px_rgba(167,139,250,0.7))]"
+            className="[filter:drop-shadow(0_0_3px_rgba(52,211,153,0.7))]"
           />
           {/* base-pair bridges connecting the two strands */}
           <line x1="22" y1="4" x2="22" y2="8" stroke="#22d3ee" strokeWidth="0.8" strokeOpacity="0.4" />
-          <line x1="40" y1="22" x2="36" y2="22" stroke="#a78bfa" strokeWidth="0.8" strokeOpacity="0.4" />
+          <line x1="40" y1="22" x2="36" y2="22" stroke="#34d399" strokeWidth="0.8" strokeOpacity="0.4" />
           <line x1="22" y1="40" x2="22" y2="36" stroke="#22d3ee" strokeWidth="0.8" strokeOpacity="0.4" />
-          <line x1="4" y1="22" x2="8" y2="22" stroke="#a78bfa" strokeWidth="0.8" strokeOpacity="0.4" />
+          <line x1="4" y1="22" x2="8" y2="22" stroke="#34d399" strokeWidth="0.8" strokeOpacity="0.4" />
         </svg>
       </motion.div>
 
