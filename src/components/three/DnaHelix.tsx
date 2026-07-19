@@ -227,8 +227,8 @@ const vertexShader = /* glsl */ `
     gl_Position     = projectionMatrix * mvPosition;
 
     // Size: ambient particles are small; pulse swells strand particles a touch
-    float sizeBoost = 1.0 + vPulse * 0.6;
-    gl_PointSize    = aSize * sizeBoost * (180.0 / -mvPosition.z);
+    float sizeBoost = 1.0 + vPulse * 0.35;
+    gl_PointSize    = aSize * sizeBoost * (120.0 / -mvPosition.z);
 
     // ── Varyings ──────────────────────────────────────────────────────────
     vColorMix = aColorMix;
