@@ -116,28 +116,15 @@ function buildParticleData() {
 
 const PARTICLES = buildParticleData();
 
-const TARGET_YS = [1.0, -1.5, -4.0, -6.5, -9.0, -11.5, -14.0];
-
-function computeTargetPositions() {
-  return TARGET_YS.map((targetY) => {
-    let bestT = 0;
-    let bestDist = Infinity;
-    for (let ri = 0; ri < 33; ri++) {
-      const t = (ri + 1) / 34;
-      const y = (t - 0.5) * HEIGHT;
-      const dist = Math.abs(y - targetY);
-      if (dist < bestDist) {
-        bestDist = dist;
-        bestT = t;
-      }
-    }
-    const a = helixPoint(bestT, 0);
-    const b = helixPoint(bestT, PHASE_OFFSET);
-    return [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2, (a[2] + b[2]) / 2] as [number, number, number];
-  });
+function helixCenterAt(localY: number): [number, number, number] {
+  const t = Math.max(0.03, Math.min(0.97, localY / HEIGHT + 0.5));
+  const a = helixPoint(t, 0);
+  const b = helixPoint(t, PHASE_OFFSET);
+  return [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2, (a[2] + b[2]) / 2];
 }
 
-const TARGET_POSITIONS = computeTargetPositions();
+const DEFAULT_TARGET_YS = [1.0, -1.5, -4.0, -6.5, -9.0, -11.5, -14.0];
+const TARGET_POSITIONS = DEFAULT_TARGET_YS.map(helixCenterAt);
 
 const vertexShader = /* glsl */ `
   attribute vec3 aHelixPosition;
@@ -325,6 +312,7 @@ export function NeuralDna({
 }) {
   const group = useRef<THREE.Group>(null!);
   const materialRef = useRef<THREE.ShaderMaterial>(null!);
+  const targetRefs = useRef<(THREE.Group | null)[]>([]);
   const [active, setActive] = useState(-1);
   const { size } = useThree();
   const lookTarget = useMemo(() => new THREE.Vector3(0, 0, 0), []);
@@ -408,6 +396,32 @@ export function NeuralDna({
     );
     lookTarget.set(axisX - viewShift, axisY, 0);
     state.camera.lookAt(lookTarget);
+
+    const cam = state.camera;
+    const inverseMatrix = g.matrixWorld.clone().invert();
+    const unprojVec = new THREE.Vector3();
+
+    for (let i = 0; i < targetRefs.current.length; i++) {
+      const tg = targetRefs.current[i];
+      if (!tg) continue;
+      const anchor = document.querySelector<HTMLElement>(
+        `[data-heading-anchor="${i}"]`,
+      );
+      if (!anchor) continue;
+      const rect = anchor.getBoundingClientRect();
+      const ndcX = 1.0;
+      const ndcY = -((rect.top + rect.height / 2) / window.innerHeight) * 2 + 1;
+      unprojVec.set(ndcX, ndcY, 0.5).unproject(cam);
+      const dir = unprojVec.sub(cam.position).normalize();
+      const t = -cam.position.z / dir.z;
+      const worldPoint = cam.position.clone().add(dir.multiplyScalar(t));
+      worldPoint.applyMatrix4(inverseMatrix);
+      const localY = worldPoint.y;
+      const snapped = helixCenterAt(localY);
+      tg.position.x = THREE.MathUtils.damp(tg.position.x, snapped[0], 4, dt);
+      tg.position.y = THREE.MathUtils.damp(tg.position.y, snapped[1], 4, dt);
+      tg.position.z = THREE.MathUtils.damp(tg.position.z, snapped[2], 4, dt);
+    }
   });
 
   return (
@@ -451,27 +465,27 @@ export function NeuralDna({
       </points>
 
       {TARGET_POSITIONS.map((pos, i) => (
-        <Html
-          key={i}
-          position={pos}
-          center
-          zIndexRange={[10, 0]}
-          style={{ pointerEvents: "none" }}
-        >
-          <div
-            data-target-index={i}
-            className={`target-lock ${active === i ? "target-lock-active" : ""}`}
+        <group key={i} ref={(el) => { targetRefs.current[i] = el; }} position={pos}>
+          <Html
+            center
+            zIndexRange={[10, 0]}
+            style={{ pointerEvents: "none" }}
           >
-            <i />
-            <i />
-            <i />
-            <i />
-            <span className="absolute left-full top-1/2 h-px w-3.5 bg-sky-300/70" />
-            <span className="absolute left-[calc(100%+18px)] top-1/2 -translate-y-1/2 whitespace-nowrap border border-sky-300/30 bg-slate-950/75 px-2.5 py-1 font-mono text-[11px] tracking-[0.3em] text-sky-300 backdrop-blur-sm">
-              SEQ.{String(i + 1).padStart(2, "0")}
-            </span>
-          </div>
-        </Html>
+            <div
+              data-target-index={i}
+              className={`target-lock ${active === i ? "target-lock-active" : ""}`}
+            >
+              <i />
+              <i />
+              <i />
+              <i />
+              <span className="absolute left-full top-1/2 h-px w-3.5 bg-sky-300/70" />
+              <span className="absolute left-[calc(100%+18px)] top-1/2 -translate-y-1/2 whitespace-nowrap border border-sky-300/30 bg-slate-950/75 px-2.5 py-1 font-mono text-[11px] tracking-[0.3em] text-sky-300 backdrop-blur-sm">
+                SEQ.{String(i + 1).padStart(2, "0")}
+              </span>
+            </div>
+          </Html>
+        </group>
       ))}
     </group>
   );

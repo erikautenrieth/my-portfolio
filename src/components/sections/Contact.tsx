@@ -1,7 +1,7 @@
 import type { Lang } from "@/i18n";
 import { dict } from "@/i18n";
 import { SectionHeading } from "@/components/ui/SectionHeading";
-import { GITHUB_URL, LINKEDIN_URL } from "@/content/links";
+import { EMAIL, GITHUB_URL, LINKEDIN_URL } from "@/content/links";
 
 export function Contact({ lang }: { lang: Lang }) {
   const d = dict[lang];
@@ -25,6 +25,12 @@ export function Contact({ lang }: { lang: Lang }) {
           className="rounded-xl bg-emerald-400/10 px-8 py-4 font-display text-lg font-semibold text-emerald-300 ring-1 ring-emerald-400/40 transition hover:shadow-xl hover:shadow-emerald-400/25 hover:ring-emerald-400/70"
         >
           LinkedIn ↗
+        </a>
+        <a
+          href={`mailto:${EMAIL}`}
+          className="rounded-xl bg-violet-400/10 px-8 py-4 font-display text-lg font-semibold text-violet-300 ring-1 ring-violet-400/40 transition hover:shadow-xl hover:shadow-violet-400/25 hover:ring-violet-400/70"
+        >
+          E-Mail ↗
         </a>
       </div>
       <footer className="mt-24 font-mono text-xs text-slate-500">{d.footer}</footer>

@@ -39,7 +39,7 @@ export const skillCategories: SkillCategory[] = [
       { name: "Spring Boot", icon: "springboot" },
       { name: "PostgreSQL", icon: "postgresql" },
       { name: "SQLAlchemy", icon: "sqlalchemy" },
-      { name: "pgvector", icon: "milvus" },          // both are vector DBs
+      { name: "pgvector", icon: "milvus" },
       { name: "Kafka", icon: "apachekafka" },
       { name: "Redis", icon: "redis" },
       { name: "Python", icon: "python" },
@@ -59,7 +59,7 @@ export const skillCategories: SkillCategory[] = [
     ],
   },
   {
-    label: { de: "Cloud & DevOps", en: "Cloud & DevOps" },
+    label: { de: "Cloud & Infrastruktur", en: "Cloud & Infrastructure" },
     skills: [
       { name: "Azure" },
       { name: "AWS" },
@@ -68,9 +68,14 @@ export const skillCategories: SkillCategory[] = [
       { name: "Helm", icon: "helm" },
       { name: "ArgoCD", icon: "argo" },
       { name: "Terraform", icon: "terraform" },
-      { name: "Git", icon: "git" },
+    ],
+  },
+  {
+    label: { de: "CI/CD & Observability", en: "CI/CD & Observability" },
+    skills: [
       { name: "GitHub Actions", icon: "githubactions" },
       { name: "GitLab CI", icon: "gitlab" },
+      { name: "Git", icon: "git" },
       { name: "Grafana", icon: "grafana" },
       { name: "Prometheus", icon: "prometheus" },
       { name: "OpenTelemetry", icon: "opentelemetry" },
@@ -93,10 +98,23 @@ export const skillCategories: SkillCategory[] = [
     label: { de: "Methodik", en: "Methodology" },
     skills: [
       { name: "Agile / Scrum", icon: "jira" },
-      { name: "CI/CD", icon: "githubactions" },
       { name: "MLOps" },
       { name: "Clean Code" },
+      { name: "TDD" },
       { name: "ADR-based Architecture" },
+      { name: "Domain-Driven Design" },
+    ],
+  },
+  {
+    label: { de: "Agentic Development", en: "Agentic Development" },
+    skills: [
+      { name: "Claude Code", icon: "claude" },
+      { name: "MCP", icon: "modelcontextprotocol" },
+      { name: "CodeGraph", icon: "neo4j" },
+      { name: "Cursor", icon: "cursor" },
+      { name: "GitHub Copilot", icon: "githubcopilot" },
+      { name: "Skills", icon: "zap" },
+      { name: "Windsurf", icon: "windsurf" },
     ],
   },
 ];
