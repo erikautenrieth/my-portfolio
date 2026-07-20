@@ -20,13 +20,13 @@ export default function Scene() {
         <color attach="background" args={["#020617"]} />
         <fogExp2 attach="fog" args={["#020617", 0.035]} />
         <PerformanceMonitor
-          onDecline={() => setDpr(1)}
+          onDecline={() => setDpr(1.5)}
           onIncline={() => setDpr(2)}
         >
           <NeuralDna reduced={!!reduced} scroll={scrollYProgress} />
           <ParticleField />
           <EffectComposer>
-            <Bloom intensity={1.3} luminanceThreshold={0.4} mipmapBlur />
+            <Bloom intensity={0.6} luminanceThreshold={0.55} mipmapBlur radius={0.4} />
           </EffectComposer>
         </PerformanceMonitor>
         <AdaptiveDpr pixelated />

@@ -19,14 +19,26 @@ export function Publications({ lang }: { lang: Lang }) {
               <em className="text-slate-100">{publication.title}.</em>{" "}
               <span className="text-sm text-slate-400">{publication.venue}.</span>
             </p>
-            <a
-              href={`https://doi.org/${publication.doi}`}
-              target="_blank"
-              rel="noopener"
-              className="mt-4 inline-block rounded-full bg-white/5 px-4 py-1.5 font-mono text-xs text-slate-300 ring-1 ring-white/15 transition hover:text-cyan-300 hover:ring-cyan-400/40 hover:shadow-lg hover:shadow-cyan-400/20"
-            >
-              DOI: {publication.doi} ↗
-            </a>
+            <div className="mt-4 flex flex-wrap gap-3">
+              <a
+                href={`https://doi.org/${publication.doi}`}
+                target="_blank"
+                rel="noopener"
+                className="inline-block rounded-full bg-white/5 px-4 py-1.5 font-mono text-xs text-slate-300 ring-1 ring-white/15 transition hover:text-cyan-300 hover:ring-cyan-400/40 hover:shadow-lg hover:shadow-cyan-400/20"
+              >
+                DOI: {publication.doi} ↗
+              </a>
+              {publication.repo && (
+                <a
+                  href={publication.repo}
+                  target="_blank"
+                  rel="noopener"
+                  className="inline-block rounded-full bg-white/5 px-4 py-1.5 font-mono text-xs text-slate-300 ring-1 ring-white/15 transition hover:text-cyan-300 hover:ring-cyan-400/40 hover:shadow-lg hover:shadow-cyan-400/20"
+                >
+                  GitHub ↗
+                </a>
+              )}
+            </div>
           </GlassCard>
         ))}
       </div>

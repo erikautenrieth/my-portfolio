@@ -4,6 +4,7 @@ export interface Publication {
   title: string;
   venue: string;
   doi: string;
+  repo?: string;
 }
 
 export const publications: Publication[] = [
@@ -21,5 +22,6 @@ export const publications: Publication[] = [
       "Vergleich von Open Source MLOps Tools zur Unterstützung von Machine Learning basierten Zeitreihenanalysen",
     venue: "Publikationsserver H-BRS",
     doi: "10.18418/opus-7847",
+    repo: "https://github.com/erikautenrieth/ec_criteria_struct",
   },
 ];
