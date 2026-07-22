@@ -19,8 +19,8 @@ export const experience: ExperienceEntry[] = [
   {
     period: "03/2025 — heute",
     role: {
-      de: "Full Stack Developer / Data Scientist",
-      en: "Full Stack Developer / Data Scientist",
+      de: "AI Engineer / Data Scientist",
+      en: "AI Engineer / Data Scientist",
     },
     company: "SprintEins, Bonn",
     projects: [
