@@ -1,6 +1,6 @@
 "use client";
 
-const STAR_COUNT = 350;
+const STAR_COUNT = 200;
 
 // Generated once at module load (client-only), keeps render pure.
 function buildStarPositions() {
@@ -19,9 +19,9 @@ export function ParticleField() {
       </bufferGeometry>
       <pointsMaterial
         color="#94a3b8"
-        size={0.045}
+        size={0.04}
         transparent
-        opacity={0.4}
+        opacity={0.25}
         depthWrite={false}
       />
     </points>

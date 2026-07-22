@@ -14,7 +14,7 @@ const TILT = -0.4;
 
 const STRAND_COUNT = 1400;
 const RUNG_PARTICLE_COUNT = 12;
-const AMBIENT_COUNT = 1000;
+const AMBIENT_COUNT = 400;
 
 function helixPoint(t: number, phase: number): [number, number, number] {
   const angle = t * TURNS * Math.PI * 2 + phase;

@@ -10,13 +10,13 @@ export const skillCategories: SkillCategory[] = [
       { name: "LangChain", icon: "langchain" },
       { name: "LangGraph", icon: "langgraph" },
       { name: "Anthropic", icon: "anthropic" },
-      { name: "OpenAI", icon: "openrouter" },
-      { name: "RAG", icon: "elasticsearch" },
+      { name: "OpenAI", icon: "openai" },
+      { name: "RAG", icon: "rag" },
       { name: "Hybrid Search", icon: "algolia" },
       { name: "Hugging Face", icon: "huggingface" },
       { name: "Prompt Engineering", icon: "chatbot" },
       { name: "Multi-Agent Orchestration", icon: "crewai" },
-      { name: "Langfuse" },
+      { name: "Langfuse", icon: "langfuse" },
     ],
   },
   {
@@ -24,12 +24,12 @@ export const skillCategories: SkillCategory[] = [
     skills: [
       { name: "PyTorch", icon: "pytorch" },
       { name: "scikit-learn", icon: "scikitlearn" },
-      { name: "CatBoost" },
+      { name: "CatBoost", icon: "catboost" },
       { name: "MLflow", icon: "mlflow" },
       { name: "Pandas", icon: "pandas" },
       { name: "NumPy", icon: "numpy" },
       { name: "Python", icon: "python" },
-      { name: "Hamilton" },
+      { name: "Hamilton", icon: "hamilton" },
     ],
   },
   {
@@ -61,8 +61,8 @@ export const skillCategories: SkillCategory[] = [
   {
     label: { de: "Cloud & Infrastruktur", en: "Cloud & Infrastructure" },
     skills: [
-      { name: "Azure" },
-      { name: "AWS" },
+      { name: "Azure", icon: "microsoftazure" },
+      { name: "AWS", icon: "amazonwebservices" },
       { name: "Docker", icon: "docker" },
       { name: "Kubernetes", icon: "kubernetes" },
       { name: "Helm", icon: "helm" },

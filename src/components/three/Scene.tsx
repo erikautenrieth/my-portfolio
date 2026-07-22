@@ -26,7 +26,7 @@ export default function Scene() {
           <NeuralDna reduced={!!reduced} scroll={scrollYProgress} />
           <ParticleField />
           <EffectComposer>
-            <Bloom intensity={0.6} luminanceThreshold={0.55} mipmapBlur radius={0.4} />
+            <Bloom intensity={0.4} luminanceThreshold={0.6} mipmapBlur radius={0.35} />
           </EffectComposer>
         </PerformanceMonitor>
         <AdaptiveDpr pixelated />
