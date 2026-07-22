@@ -1,5 +1,5 @@
 import type { Lang } from "@/i18n";
-import { LanguageToggle } from "@/components/ui/LanguageToggle";
+import { Navbar } from "@/components/ui/Navbar";
 import { SmoothScroll } from "@/components/ui/SmoothScroll";
 import { SectionReveal } from "@/components/ui/SectionReveal";
 import { TargetConnector } from "@/components/ui/TargetConnector";
@@ -27,11 +27,11 @@ export function Portfolio({ lang }: { lang: Lang }) {
 
   return (
     <SmoothScroll>
+      <Navbar lang={lang} />
       <main className="relative flex-1">
         <SceneLoader />
         <TargetConnector />
         <PrecisionCursor />
-        <LanguageToggle lang={lang} />
         <Hero lang={lang} />
         {sections.map((section, i) => (
           <SectionReveal key={i}>{section}</SectionReveal>

@@ -3,9 +3,13 @@ import type { Dict } from "./en";
 export const de: Dict = {
   hero: {
     kicker: "// SYSTEMS IN PRODUCTION",
+    subtitle: "AI-Systeme vom Prototyp in Produktion",
     name: "Erik Autenrieth",
+    description: "Ich baue agentische AI-Produkte, Retrieval-Systeme und ML-Plattformen, die nach dem Launch beobachtbar, zuverlässig und nützlich bleiben.",
     titles: ["AI Engineer", "Data Scientist", "Full Stack Developer"],
     scroll: "scrollen zum Entdecken",
+    status: "Standort Bonn · Offen für AI-Engineering-Rollen",
+    tags: ["Agentic AI", "RAG / Evals", "MLOps"],
   },
   sections: {
     about: "Über mich",

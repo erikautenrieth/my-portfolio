@@ -17,39 +17,82 @@ const item = {
 export function Hero({ lang }: { lang: Lang }) {
   const d = dict[lang];
   return (
-    <section id="hero" className="relative flex min-h-screen items-center">
+    <section id="hero" className="relative flex min-h-screen items-center pt-20">
       <motion.div
         variants={container}
         initial="hidden"
         animate="show"
-        className="mx-auto w-full max-w-6xl px-6"
+        className="mx-auto grid w-full max-w-6xl gap-12 px-6 lg:grid-cols-[1fr_auto]"
       >
-        <motion.p
+        <div>
+          <motion.p
+            variants={item}
+            className="mb-3 font-mono text-sm tracking-[0.25em] text-cyan-400"
+          >
+            {d.hero.kicker}
+          </motion.p>
+
+          <motion.p
+            variants={item}
+            className="mb-2 text-lg text-slate-400 md:text-xl"
+          >
+            {d.hero.subtitle}
+          </motion.p>
+
+          <motion.h1
+            variants={item}
+            className="font-display text-5xl font-bold leading-[1.02] md:text-7xl lg:text-8xl"
+          >
+            <span className="bg-linear-to-r from-slate-200 via-cyan-400 to-emerald-400 bg-clip-text text-transparent">
+              {d.hero.name}
+            </span>
+          </motion.h1>
+
+          <motion.p
+            variants={item}
+            className="mt-6 max-w-xl text-base text-slate-400 md:text-lg"
+          >
+            {d.hero.description}
+          </motion.p>
+
+          <motion.p
+            variants={container}
+            className="mt-5 flex flex-wrap gap-x-3 font-mono text-sm tracking-widest text-slate-500"
+          >
+            {d.hero.titles.map((title, i) => (
+              <motion.span key={title} variants={item} className="flex items-center gap-3">
+                {i > 0 && <span className="text-slate-600">/</span>}
+                <span className={i === 0 ? "text-cyan-400" : ""}>{title.toUpperCase()}</span>
+              </motion.span>
+            ))}
+          </motion.p>
+        </div>
+
+        {/* Status card */}
+        <motion.aside
           variants={item}
-          className="mb-4 font-mono text-sm tracking-[0.35em] text-cyan-400"
+          className="hidden self-center lg:block"
         >
-          {d.hero.kicker}
-        </motion.p>
-        <motion.h1
-          variants={item}
-          className="font-display text-6xl font-bold leading-[1.02] md:text-8xl"
-        >
-          <span className="bg-linear-to-r from-slate-200 via-cyan-400 to-emerald-400 bg-clip-text text-transparent">
-            {d.hero.name}
-          </span>
-        </motion.h1>
-        <motion.p
-          variants={container}
-          className="mt-6 flex flex-wrap gap-x-3 font-mono text-sm text-slate-400 md:text-base"
-        >
-          {d.hero.titles.map((title, i) => (
-            <motion.span key={title} variants={item} className="flex items-center gap-3">
-              {i > 0 && <span className="text-emerald-400">·</span>}
-              <span className={i === 0 ? "text-slate-200" : ""}>{title}</span>
-            </motion.span>
-          ))}
-        </motion.p>
+          <div className="w-72 rounded-xl border border-white/10 bg-slate-900/60 p-5 backdrop-blur-sm">
+            <div className="mb-3 flex items-center justify-between font-mono text-[10px] tracking-widest text-slate-500">
+              <span>SIGNAL / 01</span>
+              <span className="flex items-center gap-1.5 text-emerald-400">
+                <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-400" />
+                ONLINE
+              </span>
+            </div>
+            <p className="text-sm leading-relaxed text-slate-200">
+              {d.hero.status}
+            </p>
+            <div className="mt-4 flex gap-3 border-t border-white/5 pt-3 font-mono text-[10px] tracking-widest text-slate-500">
+              {d.hero.tags.map((tag) => (
+                <span key={tag}>{tag.toUpperCase()}</span>
+              ))}
+            </div>
+          </div>
+        </motion.aside>
       </motion.div>
+
       <motion.a
         href="#about"
         aria-label={d.hero.scroll}

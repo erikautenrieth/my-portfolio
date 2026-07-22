@@ -1,9 +1,13 @@
 export const en = {
   hero: {
     kicker: "// SYSTEMS IN PRODUCTION",
+    subtitle: "AI systems from prototype to production",
     name: "Erik Autenrieth",
+    description: "I design agentic AI products, retrieval systems, and ML platforms that stay observable, reliable, and useful after launch.",
     titles: ["AI Engineer", "Data Scientist", "Full Stack Developer"],
     scroll: "scroll to explore",
+    status: "Based in Bonn · Open to AI engineering roles",
+    tags: ["Agentic AI", "RAG / Evals", "MLOps"],
   },
   sections: {
     about: "About",
