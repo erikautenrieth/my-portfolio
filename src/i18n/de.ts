@@ -17,7 +17,7 @@ export const de: Dict = {
     contact: "Kontakt",
   },
   about: {
-    text: "Ich baue LLM-Systeme, die in Produktion laufen: LangGraph-Agenten mit Hybrid-RAG, vollständiger Observability und Kubernetes-Deployments. Forschungshintergrund in klinischer NLP; peer-reviewte Publikation in Frontiers in Psychiatry.",
+    text: "Ich mache aus AI-Forschung ausgelieferte Produkte. Multi-Agent-Orchestrierung, hybride Suche, End-to-End-MLOps — skalierbar gebaut, dauerhaft überwacht. M.Sc. Informatik mit Fokus auf angewandtes NLP.",
   },
   projects: {
     problem: "Problem",

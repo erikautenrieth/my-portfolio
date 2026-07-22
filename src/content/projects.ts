@@ -51,7 +51,7 @@ export const projects: Project[] = [
       en: "Master's thesis graded 1.5. Delivered a working structuring pipeline for clinical free-text data.",
     },
     tech: ["LLMs", "Prompt Engineering", "Few-Shot Learning", "HPC", "Python"],
-    links: {},
+    links: { code: "https://github.com/erikautenrieth/ec_criteria_struct" },
   },
   {
     title: {

@@ -21,7 +21,7 @@ export const metadata: Metadata = {
   metadataBase: new URL("https://erikautenrieth.github.io/my-portfolio"),
   title: "Erik Autenrieth — AI Engineer",
   description:
-    "AI Engineer building production LLM systems: LangGraph agents, hybrid RAG, MLOps on Kubernetes. Published researcher. Based in Bonn, Germany.",
+    "AI Engineer shipping LLM-powered products: multi-agent orchestration, hybrid search, end-to-end MLOps. M.Sc. Computer Science. Based in Bonn, Germany.",
   alternates: {
     canonical: "/",
     languages: { en: "/", de: "/de" },
@@ -29,7 +29,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Erik Autenrieth — AI Engineer",
     description:
-      "AI Engineer building production LLM systems: LangGraph agents, hybrid RAG, MLOps on Kubernetes. Published researcher. Based in Bonn, Germany.",
+      "AI Engineer shipping LLM-powered products: multi-agent orchestration, hybrid search, end-to-end MLOps. M.Sc. Computer Science. Based in Bonn, Germany.",
     type: "website",
     locale: "en",
     alternateLocale: "de",

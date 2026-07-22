@@ -15,7 +15,7 @@ export const en = {
     contact: "Contact",
   },
   about: {
-    text: "I build production LLM systems: LangGraph agents with hybrid RAG, full observability, and Kubernetes deployments that actually run. Research background in clinical NLP; peer-reviewed publication in Frontiers in Psychiatry.",
+    text: "I turn AI research into shipped products. Multi-agent orchestration, hybrid search, end-to-end MLOps — built to scale, monitored to last. M.Sc. CS with a focus on practical NLP.",
   },
   projects: {
     problem: "Problem",
